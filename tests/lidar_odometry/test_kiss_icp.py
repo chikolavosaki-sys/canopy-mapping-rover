@@ -6,14 +6,15 @@ import numpy as np
 import pytest
 
 from canopy.config import section
-from canopy.simulation.synthetic_forest import make_forest, simulate_traversal, traversal_poses
+from canopy.simulation.lidar import simulate_traversal
+from canopy.simulation.synthetic_forest import make_forest, traversal_poses
 
 
 @pytest.fixture(scope="module")
 def traversal() -> tuple[list[np.ndarray], list[np.ndarray]]:
     """A short drive through a small forest: exact world poses and sensor-frame scans."""
     forest = make_forest(seed=0, plot_size_m=30.0, n_trees=25)
-    sequence = simulate_traversal(forest, traversal_poses(30.0, length_m=6.0), sensor_frame=True)
+    sequence = simulate_traversal(forest, traversal_poses(forest, length_m=6.0), sensor_frame=True)
     return [pose for pose, _ in sequence], [scan for _, scan in sequence]
 
 
@@ -44,7 +45,7 @@ def test_sensor_frame_scans_sit_around_the_origin(traversal) -> None:
 
 def test_traversal_poses_face_along_the_path() -> None:
     """Each pose's forward axis points towards the next position."""
-    poses = traversal_poses(30.0, length_m=2.0)
+    poses = traversal_poses(make_forest(0, 30.0, 2), length_m=2.0)
     step = poses[1][:2, 3] - poses[0][:2, 3]
 
     assert np.dot(poses[0][:2, 0], step / np.linalg.norm(step)) > 0.9

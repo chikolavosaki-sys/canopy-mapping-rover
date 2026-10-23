@@ -62,14 +62,11 @@ def _load_input(args: argparse.Namespace) -> tuple[list[int], list[np.ndarray], 
 
 def synthetic_sequence(seed: int) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """Simulate a traversal and return exact world poses and sensor-frame scans."""
-    from canopy.simulation.synthetic_forest import (
-        make_forest,
-        simulate_traversal,
-        traversal_poses,
-    )
+    from canopy.simulation.lidar import simulate_traversal
+    from canopy.simulation.synthetic_forest import make_forest, traversal_poses
 
     forest = make_forest(seed)
-    sequence = simulate_traversal(forest, traversal_poses(forest.plot_size_m), sensor_frame=True)
+    sequence = simulate_traversal(forest, traversal_poses(forest), sensor_frame=True)
     return [pose for pose, _ in sequence], [scan for _, scan in sequence]
 
 

@@ -18,7 +18,7 @@ def test_run_demo_writes_report_and_summary(tmp_path) -> None:
     assert 0 < summary["map_points"]
     for name in ("report.md", "summary.json", "ladder_fuel.png", "trees.json"):
         assert (tmp_path / name).exists()
-    assert "Scanned map" in (tmp_path / "report.md").read_text()
+    assert "Exact-pose map" in (tmp_path / "report.md").read_text()
 
 
 def test_shrub_cells_cover_the_whole_footprint() -> None:
@@ -45,7 +45,7 @@ def test_update_outcomes_replaces_only_the_marked_block(tmp_path) -> None:
     doc.write_text(f"before\n{MARKERS[0]}\nold table\n{MARKERS[1]}\nafter\n")
     keys = (
         "odometry_drift_percent", "odometry_ate_rmse_m", "map_tree_recall", "cloud_tree_recall",
-        "map_dbh_rmse_m", "map_ladder_auc", "navigation_success",
+        "map_dbh_rmse_m", "map_ladder_auc", "navigation_success", "exact_tree_recall",
     )
     summary = {key: 0.5 for key in keys} | {"navigation_collisions": 0, "navigation_runs": 80}
 

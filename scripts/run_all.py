@@ -2,8 +2,10 @@
 
 Chain: simulated drive -> KISS-ICP odometry -> one registered map -> forest
 analytics -> evaluation against the simulator's exact ground truth. The same
-analytics also run on the forest's perfect point cloud, as an upper bound that
-shows how much the scanning and odometry steps cost.
+analytics also run on two references, so losses can be traced:
+
+- the same scans registered with the *exact* poses (isolates odometry error),
+- the forest's perfect point cloud (upper bound for the analytics).
 """
 
 import argparse
@@ -26,12 +28,8 @@ from canopy.forest_analytics.ground import normalize_heights
 from canopy.forest_analytics.ladder_fuel import ladder_fuel_index, save_ladder_report
 from canopy.forest_analytics.stems import detect_stems, stems_to_rows
 from canopy.lidar_odometry import register_scans, run_kiss_icp, transform_points
-from canopy.simulation.synthetic_forest import (
-    Forest,
-    make_forest,
-    simulate_traversal,
-    traversal_poses,
-)
+from canopy.simulation.lidar import simulate_traversal
+from canopy.simulation.synthetic_forest import Forest, make_forest, traversal_poses
 
 Summary = dict[str, float | int]
 OUTCOMES = Path(__file__).resolve().parents[1] / "docs" / "OUTCOMES.md"
@@ -44,11 +42,13 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
     demo = config["demo"]
     out_dir.mkdir(parents=True, exist_ok=True)
     forest = make_forest(seed, demo["plot_size_m"], demo["tree_count"], demo["points_per_tree"])
-    world_map, summary = map_with_odometry(forest)
+    world_map, exact_map, summary = map_with_odometry(forest)
     map_metrics, map_trees = analyse(world_map, forest, config, out_dir)
+    exact_metrics, _ = analyse(exact_map, forest, config, None)
     cloud_metrics, _ = analyse(forest.points, forest, config, None)
-    summary.update({f"map_{key}": value for key, value in map_metrics.items()})
-    summary.update({f"cloud_{key}": value for key, value in cloud_metrics.items()})
+    results = {"map": map_metrics, "exact": exact_metrics, "cloud": cloud_metrics}
+    for prefix, metrics in results.items():
+        summary.update({f"{prefix}_{key}": value for key, value in metrics.items()})
     nav = config["navigation"]["eval"]
     first = nav["reported_seed_offset"] + seed
     seeds = range(first, first + nav["seeds_per_density"])
@@ -64,17 +64,18 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
     return summary
 
 
-def map_with_odometry(forest: Forest) -> tuple[np.ndarray, Summary]:
-    """Drive through the forest, estimate the path with KISS-ICP, and build a world map.
+def map_with_odometry(forest: Forest) -> tuple[np.ndarray, np.ndarray, Summary]:
+    """Drive through the forest; return the KISS-ICP map, the exact-pose map, and metrics.
 
     KISS-ICP's map starts at the first scan. We place it in world coordinates
     with the known start pose, as a real rover would with a GPS fix at the start.
     """
-    sequence = simulate_traversal(forest, traversal_poses(forest.plot_size_m), sensor_frame=True)
+    sequence = simulate_traversal(forest, traversal_poses(forest), sensor_frame=True)
     truth = relative_to_first([pose for pose, _ in sequence])
     scans = [scan for _, scan in sequence]
     estimated = run_kiss_icp(scans)
     world_map = transform_points(register_scans(scans, estimated), sequence[0][0])
+    exact_map = transform_points(register_scans(scans, truth), sequence[0][0])
     summary: Summary = {
         "odometry_frames": len(scans),
         "odometry_path_m": float(
@@ -85,7 +86,7 @@ def map_with_odometry(forest: Forest) -> tuple[np.ndarray, Summary]:
         "odometry_drift_percent": final_drift_percent(estimated, truth),
         "map_points": len(world_map),
     }
-    return world_map, summary
+    return world_map, exact_map, summary
 
 
 def analyse(
@@ -158,14 +159,16 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
         "",
         "## Forest analytics",
         "",
-        f"Scanned map: {summary['map_points']} points from simulated scans registered",
-        "with KISS-ICP. Perfect cloud: every simulated forest point (upper bound).",
+        f"KISS-ICP map: {summary['map_points']} points from simulated scans registered with",
+        "KISS-ICP. Exact-pose map: the same scans with the true poses (so the gap to the",
+        "first column is odometry error). Perfect cloud: every forest point (upper bound).",
         "",
-        "| Metric | Scanned map | Perfect cloud |",
-        "|---|---:|---:|",
+        "| Metric | KISS-ICP map | Exact-pose map | Perfect cloud |",
+        "|---|---:|---:|---:|",
     ]
+    columns = ("map", "exact", "cloud")
     lines += [
-        f"| {label} | {_fmt(summary[f'map_{key}'])} | {_fmt(summary[f'cloud_{key}'])} |"
+        f"| {label} | " + " | ".join(_fmt(summary[f"{c}_{key}"]) for c in columns) + " |"
         for label, key in rows
     ]
     lines += [
@@ -195,6 +198,7 @@ def update_outcomes(summary: Summary, seed: int, path: Path = OUTCOMES) -> None:
         ("Odometry final drift (% of path)", summary["odometry_drift_percent"], "< 2 %"),
         ("Odometry ATE RMSE (m)", summary["odometry_ate_rmse_m"], "-"),
         ("Tree recall, scanned map", summary["map_tree_recall"], ">= 0.90"),
+        ("Tree recall, exact-pose map (no odometry error)", summary["exact_tree_recall"], "-"),
         ("Tree recall, perfect cloud (upper bound)", summary["cloud_tree_recall"], "-"),
         ("DBH RMSE (m), scanned map", summary["map_dbh_rmse_m"], "<= 0.03"),
         ("Ladder AUC vs shrub cells, scanned map", summary["map_ladder_auc"], ">= 0.75"),

@@ -15,9 +15,12 @@ import numpy as np
 
 from canopy.config import section
 from canopy.navigation.controller import Controller, MotionState
+from canopy.navigation.memory import ObstacleMemory
 from canopy.navigation.sectors import corridor_clearance, footprint_clearance, nearest_obstacles
+from canopy.navigation.terrain import heights_above_ground
 
-from .synthetic_forest import Forest, Sensor, simulate_scan
+from .lidar import Sensor, simulate_scan
+from .synthetic_forest import Forest
 
 _NAV = section("navigation")
 
@@ -49,28 +52,30 @@ def run_rover(
     rover_radius: float = _NAV["rover_radius_m"],
     step_size: float = _NAV["step_size_m"],
 ) -> RunResult:
-    """Drive from ``start`` (4x4 pose on the ground) towards ``goal`` (x, y, ...)."""
+    """Drive from ``start`` (4x4 pose, z ignored) towards ``goal`` (x, y, ...)."""
     pose = np.asarray(start, dtype=float).copy()
+    pose[2, 3] = float(forest.terrain.height(*pose[:2, 3]))
     target = np.asarray(goal, dtype=float)[:2]
     turn = np.deg2rad(_NAV["turn_angle_deg"])
     poses, path_length = [pose.copy()], 0.0
     straight = float(np.linalg.norm(target - pose[:2, 3]))
+    memory = ObstacleMemory()
     for _ in range(max_steps):
         if np.linalg.norm(target - pose[:2, 3]) <= _NAV["goal_tolerance_m"]:
             return RunResult(poses, True, False, False, path_length, straight)
-        local = _sense(forest, pose, sensor)
+        local = memory.update(_sense(forest, pose, sensor), pose)
         sectors, goal_heading = nearest_obstacles(local), _goal_heading(pose, target)
         state = controller.update(sectors, corridor_clearance(local), goal_heading)
         heading = _heading(pose)
         if state == MotionState.TURN_LEFT:
-            pose = _pose_at(pose[:2, 3], heading + turn)
+            pose = _pose_at(pose[:2, 3], heading + turn, forest)
         elif state == MotionState.TURN_RIGHT:
-            pose = _pose_at(pose[:2, 3], heading - turn)
+            pose = _pose_at(pose[:2, 3], heading - turn, forest)
         elif state == MotionState.FORWARD:
             remaining = float(np.linalg.norm(target - pose[:2, 3]))
             steer = _safe_steer(local, sectors, goal_heading, controller, min(step_size, remaining))
             if steer is None:  # no safe step: rotate away from the closest obstacle instead
-                poses.append(_pose_at(pose[:2, 3], heading + _away(local) * turn))
+                poses.append(_pose_at(pose[:2, 3], heading + _away(local) * turn, forest))
                 pose = poses[-1].copy()
                 continue
             heading += steer
@@ -80,7 +85,7 @@ def run_rover(
             if collides(position, forest, rover_radius):
                 return RunResult(poses, False, True, False, path_length, straight)
             path_length += min(step_size, remaining)
-            pose = _pose_at(position, heading)
+            pose = _pose_at(position, heading, forest)
         poses.append(pose.copy())
     return RunResult(poses, False, False, True, path_length, straight)
 
@@ -101,12 +106,16 @@ def collides(position: np.ndarray, forest: Forest, rover_radius: float) -> bool:
 
 
 def _sense(forest: Forest, pose: np.ndarray, sensor: Sensor) -> np.ndarray:
-    """Scan from the LiDAR mounted above the rover; return points in the rover frame."""
+    """Scan from the LiDAR above the rover; rover-frame points, z = height above ground.
+
+    The rover sits level on the terrain (it does not pitch on slopes); its
+    obstacle test uses its own per-scan ground estimate, not the simulator's.
+    """
     sensor_pose = pose.copy()
     sensor_pose[2, 3] += _NAV["sensor_height_m"]
     scan = simulate_scan(forest, sensor_pose, sensor)
     homogeneous = np.column_stack((scan, np.ones(len(scan))))
-    return (np.linalg.inv(pose) @ homogeneous.T).T[:, :3]
+    return heights_above_ground((np.linalg.inv(pose) @ homogeneous.T).T[:, :3])
 
 
 def _safe_steer(
@@ -149,10 +158,11 @@ def _rotate(points: np.ndarray, angle: float) -> np.ndarray:
     return rotated
 
 
-def _pose_at(position: np.ndarray, heading: float) -> np.ndarray:
+def _pose_at(position: np.ndarray, heading: float, forest: Forest) -> np.ndarray:
+    """Level rover pose at ``position``, standing on the terrain."""
     pose = np.eye(4)
     pose[:2, :2] = [[np.cos(heading), -np.sin(heading)], [np.sin(heading), np.cos(heading)]]
-    pose[:2, 3] = position[:2]
+    pose[:3, 3] = (position[0], position[1], float(forest.terrain.height(*position[:2])))
     return pose
 
 

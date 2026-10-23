@@ -88,3 +88,33 @@ def test_forward_steering_only_towards_a_clear_goal_direction() -> None:
 
     assert np.isclose(controller.forward_steering(OPEN, 0.6), np.deg2rad(15.0))
     assert controller.forward_steering(blocked_left, 0.6) == 0.0
+
+
+def test_memory_keeps_an_obstacle_that_left_the_field_of_view() -> None:
+    """A rock seen 2 m ahead is still reported after the rover drives up to it."""
+    from canopy.navigation.memory import ObstacleMemory
+
+    memory = ObstacleMemory(scans=4)
+    start = np.eye(4)
+    memory.update(np.array([[2.0, 0.0, 0.5]]), start)
+    moved = np.eye(4)
+    moved[0, 3] = 1.5  # drove 1.5 m forward; the new scan sees nothing
+
+    remembered = memory.update(np.empty((0, 3)), moved)
+
+    np.testing.assert_allclose(remembered, [[0.5, 0.0, 0.5]])
+
+
+def test_heights_above_ground_follow_a_slope() -> None:
+    """On a 15 degree slope, ground points get ~0 height and a trunk point its true height."""
+    from canopy.navigation.terrain import heights_above_ground
+
+    x, y = (axis.ravel() for axis in np.meshgrid(np.arange(-8.0, 8.0, 0.5), np.arange(-8, 8, 0.5)))
+    slope = np.tan(np.deg2rad(15.0))
+    ground = np.column_stack((x, y, slope * x))
+    trunk = np.array([[3.2, 0.1, slope * 3.2 + 1.0]])
+
+    heights = heights_above_ground(np.vstack((ground, trunk)))[:, 2]
+
+    np.testing.assert_allclose(heights[:-1], 0.0, atol=1e-6)
+    assert abs(heights[-1] - 1.0) < 1e-6

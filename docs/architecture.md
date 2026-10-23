@@ -53,8 +53,15 @@ reference path and ATE/RPE. KISS-ICP is optional at import time; its test is
 skipped when the package is missing (as in CI). Scans fed to odometry must be
 in the sensor frame (`simulate_traversal(..., sensor_frame=True)`).
 
+The simulator (`canopy.simulation`) builds a forest on tilted, bumpy ground
+(slopes up to 15 deg) with exact ground truth. `simulation.lidar` turns it
+into triangle meshes and ray-casts a VLP-16-like scan with Open3D's
+`RaycastingScene` (true occlusion, range noise, a label per point).
+
 Phase 4 adds simulator-only navigation. Each step the rover scans from a
-LiDAR 0.6 m above its base; `navigation.sectors` turns the rover-frame points
+LiDAR 0.6 m above its base, estimates its own ground plane from the scan
+(`navigation.terrain`, RANSAC), and remembers obstacle points from the last
+8 scans (`navigation.memory`) to cover the LiDAR's close-range blind zone; `navigation.sectors` turns the rover-frame points
 into 9 forward sector distances, a rover-wide corridor clearance, and a
 footprint clearance. `navigation.controller` is a FORWARD / TURN_LEFT /
 TURN_RIGHT / STOP state machine: it turns in place as soon as the corridor is

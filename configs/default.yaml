@@ -9,13 +9,14 @@ simulation:
   tree_count: 40
   points_per_tree: 180
   ground:
-    spacing_m: 2.0          # grid spacing of ground points
-    min_points_per_side: 12
-    # Smooth ground: z = a1*sin(x/w1) + a2*cos(y/w2) + slope_rise_m * x/plot_size.
-    # TODO(step 5): replace with noisy ground and slopes up to 15 deg.
-    wave_amplitudes_m: [0.08, 0.06]
-    wave_lengths_m: [4.0, 5.0]
-    slope_rise_m: 0.12
+    spacing_m: 0.5             # ground sample and ground-mesh grid spacing
+    max_slope_deg: 15.0        # each forest gets a random tilt in [0, max]
+    wave_count: 3              # smooth bumps on top of the tilt
+    wave_amplitude_m: 0.15     # total bump amplitude (kept below the rover's 0.3 m clearance)
+    wavelength_range_m: [6.0, 20.0]
+    # Forest-floor roughness (litter, roots). Smooth ground makes LiDAR rings look the same
+    # everywhere, so ICP "thinks" it is not moving (ATE 0.74 m over 6 m at 0 cm, 0.26 m at 5 cm).
+    roughness_std_m: 0.05
   trees:
     edge_margin_m: 2.0
     dbh_range_m: [0.10, 0.60]
@@ -41,18 +42,24 @@ simulation:
     sway_amplitude_m: 2.0
     sway_wavelength_m: 4.0
     sensor_height_m: 0.6
+  mesh:                        # geometry the simulated LiDAR rays hit (canopy.simulation.lidar)
+    cylinder_resolution: 24    # sides per trunk cylinder
+    sphere_resolution: 4       # detail of rock and foliage-clump spheres
+    trunk_sink_m: 0.3          # trunks start this far below ground so slopes leave no gap
+    crown_clump_radius_m: 0.20 # each crown point becomes a leaf clump this size (porous crowns)
+    shrub_clump_radius_m: 0.10
   rocks:                       # solid boulders: points lie on a hemisphere of this radius
     count: 3
     points_per_rock: 120
     radius_range_m: [0.3, 0.7]
     edge_margin_m: 1.0
 
-sensor:
+sensor:                       # roughly a Velodyne VLP-16
   beam_count: 16
   vertical_fov_deg: 30.0
-  horizontal_samples: 180
+  horizontal_samples: 900      # 0.4 deg azimuth steps
   max_range_m: 30.0
-  range_noise_std_m: 0.01
+  range_noise_std_m: 0.01      # Gaussian noise along each ray
 
 ground:
   grid_size_m: 1.0
@@ -113,12 +120,18 @@ navigation:
   stop_distance_fraction: 0.5  # STOP when every sector is closer than this x safety distance
   goal_heading_weight: 0.25    # side bonus (x forward radius) for turning towards the goal
   goal_tolerance_m: 0.35
+  memory_scans: 8              # remember obstacles from the last 8 scans (covers the blind zone)
+  terrain:                     # rover's own ground estimate from each scan
+    cell_size_m: 1.0           # lowest point per cell = ground candidate
+    ransac_distance_m: 0.15    # candidates this close to the plane count as ground
+    ransac_iterations: 60
   eval:
     plot_size_m: 30.0
     tree_counts: [10, 20, 40, 80]  # forest densities: about 110-890 trees per hectare
     seeds_per_density: 20      # 4 x 20 = 80 runs (target: >= 50)
-    # The controller was tuned on seeds 0-19; reported runs start here so they are unseen.
-    reported_seed_offset: 1000
+    # Seeds 0-19 were used to tune the controller and 1000-1019 to diagnose the blind
+    # zone, so reported runs start here, on seeds nobody has looked at.
+    reported_seed_offset: 2000
     start_goal_margin_m: 1.0   # start/goal sit this far inside the plot edges
     start_clearance_m: 1.0     # start/goal must be this far from any trunk or rock
     start_search_step_m: 0.5   # shift start/goal sideways by this until clear

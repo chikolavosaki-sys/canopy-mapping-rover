@@ -55,6 +55,45 @@ def normalize_heights(
     return model, normalized
 
 
+def lowest_per_cell(points: ArrayLike, cell_size: float) -> NDArray[np.int64]:
+    """Indices of the lowest point in each occupied XY cell (likely ground)."""
+    values = _points(points)
+    cells = np.floor(values[:, :2] / cell_size).astype(np.int64)
+    order = np.lexsort((values[:, 2], cells[:, 1], cells[:, 0]))
+    _, first = np.unique(cells[order], axis=0, return_index=True)
+    return order[first]
+
+
+def fit_plane_ransac(
+    points: ArrayLike, distance: float, iterations: int, seed: int = 0
+) -> tuple[NDArray[np.float64], NDArray[np.bool_]]:
+    """Fit ``z = a x + b y + c`` robustly; return ``(a, b, c)`` and the inlier mask.
+
+    RANSAC: try planes through random triples of points, keep the one with the
+    most points within ``distance``, then refine it by least squares on those
+    inliers. Points on trunks or shrubs do not pull the plane up.
+    """
+    values = _points(points)
+    if len(values) < 3:
+        raise ValueError("need at least three points to fit a plane")
+    rng = np.random.default_rng(seed)
+    design = np.column_stack((values[:, :2], np.ones(len(values))))
+    best = np.zeros(len(values), dtype=bool)
+    for _ in range(iterations):
+        sample = rng.choice(len(values), 3, replace=False)
+        try:
+            plane = np.linalg.solve(design[sample], values[sample, 2])
+        except np.linalg.LinAlgError:
+            continue
+        inliers = np.abs(design @ plane - values[:, 2]) <= distance
+        if inliers.sum() > best.sum():
+            best = inliers
+    if best.sum() < 3:
+        best[:] = True
+    plane = np.linalg.lstsq(design[best], values[best, 2], rcond=None)[0]
+    return plane, best
+
+
 def _points(points: ArrayLike) -> NDArray[np.float64]:
     values = np.asarray(points, dtype=float)
     if values.ndim != 2 or values.shape[1] != 3:

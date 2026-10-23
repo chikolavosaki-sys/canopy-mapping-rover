@@ -37,7 +37,7 @@ OUTCOMES = Path(__file__).resolve().parents[1] / "docs" / "OUTCOMES.md"
 MARKERS = ("<!-- demo-results:start -->", "<!-- demo-results:end -->")
 
 
-def run_demo(seed: int, out_dir: Path) -> Summary:
+def run_demo(seed: int, out_dir: Path, fast: bool = False) -> Summary:
     """Run odometry, mapping, analytics, and navigation; write the report files."""
     config = load_config()
     demo = config["demo"]
@@ -53,8 +53,11 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
         summary.update({f"{prefix}_{key}": value for key, value in metrics.items()})
     nav = config["navigation"]["eval"]
     first = nav["reported_seed_offset"] + seed
-    seeds = range(first, first + nav["seeds_per_density"])
-    overall = summarise(evaluate_navigation(seeds, out_dir=out_dir / "navigation"))[-1]
+    seeds = range(first, first + (2 if fast else nav["seeds_per_density"]))
+    tree_counts = (10, 40) if fast else tuple(nav["tree_counts"])
+    overall = summarise(
+        evaluate_navigation(seeds, tree_counts=tree_counts, out_dir=out_dir / "navigation")
+    )[-1]
     summary["navigation_runs"] = overall["runs"]
     summary["navigation_success"] = overall["success_rate"]
     summary["navigation_collisions"] = overall["collisions"]
@@ -251,10 +254,13 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=Path, default=Path("results/demo"))
     parser.add_argument(
+        "--fast", action="store_true", help="fast run for live demos (4 nav trials)"
+    )
+    parser.add_argument(
         "--update-outcomes", action="store_true", help="rewrite the table in docs/OUTCOMES.md"
     )
     args = parser.parse_args()
-    summary = run_demo(args.seed, args.out)
+    summary = run_demo(args.seed, args.out, fast=args.fast)
     if args.update_outcomes:
         update_outcomes(summary, args.seed)
 

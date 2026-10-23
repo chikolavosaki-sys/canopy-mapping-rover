@@ -43,13 +43,13 @@ Seed 0.
 |---|---:|---:|
 | Odometry final drift (% of path) | 10.7746 | < 2 % |
 | Odometry ATE RMSE (m) | 0.7880 | - |
-| Tree recall, scanned map | 0.0000 | >= 0.90 |
+| Tree recall, scanned map | 0.3333 | >= 0.90 |
 | Tree recall, exact-pose map (no odometry error) | 1.0000 | - |
 | Tree recall, perfect cloud (upper bound) | 1.0000 | - |
-| DBH RMSE (m), scanned map | n/a | <= 0.03 |
-| DBH RMSE (m), exact-pose map | 0.0051 | <= 0.03 |
-| Ground precision (rocks excluded) / recall | 0.993 / 0.979 | - |
-| Ladder AUC vs shrub cells, scanned map | 0.8767 | >= 0.75 |
+| DBH RMSE (m), scanned map | 0.0032 | <= 0.03 |
+| DBH RMSE (m), exact-pose map | 0.0047 | <= 0.03 |
+| Ground precision (rocks excluded) / recall | 0.994 / 0.995 | - |
+| Ladder AUC vs shrub cells, scanned map | 0.8809 | >= 0.75 |
 | Navigation runs | 80 | >= 50 |
 | Navigation success rate | 0.9375 | >= 0.90 |
 | Navigation collisions | 4 | 0 |

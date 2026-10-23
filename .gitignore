@@ -14,7 +14,8 @@ venv/
 *.npz
 *.db3
 *.mcap
-data/
+data/*
+!data/MANIFEST.csv
 results/**
 !results/**/*.md
 !results/**/*.png

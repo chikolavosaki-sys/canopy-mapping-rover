@@ -2,10 +2,10 @@
 
 | Project need | Status | Reason |
 |---|---|---|
-| LiDAR odometry needs LiDAR plus IMU sequences | Partly | TreeScope is the primary test set because it confirms raw LiDAR and IMU in ROS bags. The other reviewed sources do not confirm released raw IMU streams; if TreeScope IMU is unavailable in practice, use LiDAR-only KISS-ICP as a fallback. |
+| LiDAR odometry needs LiDAR plus IMU sequences | Covered (confirmed 2026-10-23) | TreeScope WSF-19 `cloud3.bag` (ROS1, 18.3 s) has `/velodyne/cloud` PointCloud2 at 5 Hz (x, y, z, intensity; no per-point time) and `/imu/imu` at 250 Hz. KISS-ICP stays primary; the IMU allows a later LiDAR-inertial comparison. See `docs/real-data.md`. |
 | Canopy density by height layer | Covered | DigiForests, WildScenes, TreeScope, Shivalik, Weiser, and LiDAR-Forest provide 3D point data or simulated point data that can support a prototype after ground handling. |
-| Stem detection and DBH with ground truth | Covered | TreeScope has annotated tree stems and field-measured diameters; Shivalik and Weiser have measured DBH, although their point-label structure differs. Those static datasets are reserved for this analytics work, not odometry. |
-| Ladder-fuel ground truth | Gap | No reviewed dataset has direct ladder-fuel labels. We will use a proxy based on point density in 1-4 m and 1-8 m height bands, validated against DigiForests shrub labels. |
+| Stem detection and DBH with ground truth | Covered (TreeScope confirmed 2026-10-23) | TreeScope has annotated tree stems and field-measured diameters (VAT-0723: 76 trees, DBH in metres; WSF-19: 63 trees, DBH apparently in inches; VAT-0723 `.h5` has 145 frames of ground/trunk points); Shivalik and Weiser have measured DBH, although their point-label structure differs. Those static datasets are reserved for this analytics work, not odometry. |
+| Ladder-fuel ground truth | Gap | No reviewed dataset has direct ladder-fuel labels. We will use a proxy based on point density in 1-4 m and 1-8 m height bands, validated against DigiForests shrub labels. DigiForests was unreachable on 2026-10-23, so this check has no real data yet. |
 | Obstacle and terrain labels | Partly | WildScenes labels natural scene and terrain classes; LiDAR-Forest includes semantic ground/tree/stone labels. Rover-specific traversability labels are not documented. |
 | Live navigation testing | Partly | The project will use repeated simulator runs for obstacle-avoidance success and collisions. There will be no real-rover field validation. |
 | Data from an Indian forest | Covered | Shivalik is from forest regions in the Shivalik Range of northern Haryana, India, and includes 12 plots and 674 trees. |

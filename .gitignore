@@ -19,3 +19,4 @@ results/**
 !results/**/*.md
 !results/**/*.png
 !results/**/*.csv
+*.egg-info/

@@ -58,6 +58,10 @@ Phase 5 connects the synthetic forest, analytics, navigation, and evaluation
 pieces in `scripts/run_all.py`. It writes a report, summary JSON, tree metrics,
 navigation CSV, and ladder-fuel heatmap under `results/<run>/`.
 
+Phase 6 adds instruction-only dataset layout validators, common TUM/tree-table
+adapters, and KISS-ICP bag CLI wiring through `rosbags`. Dataset scripts never
+download files; users provide local data under ignored paths.
+
 ## Open risks
 
 - **TreeScope reference trajectory:** TreeScope processed bags publish
@@ -74,3 +78,6 @@ navigation CSV, and ladder-fuel heatmap under `results/<run>/`.
 - **No ladder-fuel labels:** Ladder fuel remains a height-band occupancy proxy,
   checked against DigiForests shrub labels rather than presented as direct
   biological ground truth.
+- **Real-data schema limits:** Shivalik and Weiser field-table column names
+  still require confirmation from their released documentation before adding a
+  dataset-specific mapping.

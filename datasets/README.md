@@ -23,3 +23,10 @@ These are links and planning notes only. The repository does not contain raw dat
 | 17 | ISRO Bhuvan | Water | Prajwal | https://bhuvan.nrsc.gov.in/ | UNVERIFIED | UNVERIFIED | UNVERIFIED | UNVERIFIED | UNVERIFIED | PAUSED |
 
 The `VERIFIED` label here means the team has selected the named source for planning. It does not certify every field in the row.
+
+## Phase 6 access rule
+
+The repository does not auto-download any dataset. Use the instruction scripts
+in `datasets/download_scripts/` to print official links and validate a local
+folder layout after obtaining the files manually. Dataset-specific field names
+must be confirmed before adding an adapter.

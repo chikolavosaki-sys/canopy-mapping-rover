@@ -54,6 +54,10 @@ sectors, a hysteretic controller chooses a movement state, and a unicycle
 rover is checked against synthetic stem geometry for collisions. Repeated
 seed runs write navigation metrics without claiming real-rover safety.
 
+Phase 5 connects the synthetic forest, analytics, navigation, and evaluation
+pieces in `scripts/run_all.py`. It writes a report, summary JSON, tree metrics,
+navigation CSV, and ladder-fuel heatmap under `results/<run>/`.
+
 ## Open risks
 
 - **TreeScope reference trajectory:** TreeScope processed bags publish

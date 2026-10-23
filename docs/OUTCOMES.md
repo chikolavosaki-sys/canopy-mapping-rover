@@ -26,6 +26,23 @@ model, height normalization, voxel occupancy density, a ladder-fuel proxy
 report, and breast-height stem circle fitting. These outputs are intended for
 synthetic testing first; the ladder score is not a direct fire-behaviour label.
 
+## Demo results
+
+`python scripts/run_all.py --seed 0 --out results/demo` regenerates this table
+without downloading any data. Values below are produced by the latest local
+run and are examples, not claims about real forest performance.
+
+| Metric | Value |
+|---|---:|
+| Tree recall | See `results/demo/summary.json` |
+| Tree precision | See `results/demo/summary.json` |
+| DBH RMSE (m) | See `results/demo/summary.json` |
+| Ladder Spearman correlation | See `results/demo/summary.json` |
+| Ladder AUC | See `results/demo/summary.json` |
+| Navigation success | See `results/demo/summary.json` |
+| Synthetic ATE RMSE (m) | See `results/demo/summary.json` |
+| Synthetic RPE RMSE (m) | See `results/demo/summary.json` |
+
 ## Honest limits
 
 - The rover is simulated; there is no real rover hardware in this project.

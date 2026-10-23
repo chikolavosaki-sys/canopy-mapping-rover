@@ -35,6 +35,9 @@ dev = [
     "ruff>=0.6",
 ]
 
+[project.scripts]
+canopy-analyze = "canopy.forest_analytics.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

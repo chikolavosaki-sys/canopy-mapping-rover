@@ -1,0 +1,2 @@
+[console_scripts]
+canopy-analyze = canopy.forest_analytics.cli:main

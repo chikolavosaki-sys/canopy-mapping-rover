@@ -17,6 +17,11 @@
 
 The system processes a forest recording and outputs a map highlighting zones with the most ladder fuel.
 
+Phase 2 adds the first forest-analytics path: a grid-lowest-point terrain
+model, height normalization, voxel occupancy density, a ladder-fuel proxy
+report, and breast-height stem circle fitting. These outputs are intended for
+synthetic testing first; the ladder score is not a direct fire-behaviour label.
+
 ## Honest limits
 
 - The rover is simulated; there is no real rover hardware in this project.

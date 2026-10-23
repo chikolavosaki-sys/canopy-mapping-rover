@@ -6,12 +6,17 @@ import numpy as np
 
 
 def write_tum(poses: list[tuple[int, np.ndarray]], path: str | Path) -> None:
-    """Write timestamped poses in evo-compatible TUM format."""
+    """Write timestamped poses in evo-compatible TUM format.
+
+    Timestamps are integer nanoseconds and are written as exact decimal
+    seconds; a float format would round real (1.5e9 s) stamps to whole seconds.
+    """
     with Path(path).open("w", encoding="utf-8") as output:
         for timestamp, pose in poses:
-            quaternion = _matrix_to_quaternion(pose[:3, :3])
-            values = [timestamp / 1_000_000_000, *pose[:3, 3], *quaternion]
-            output.write(" ".join(f"{value:.9g}" for value in values) + "\n")
+            seconds, nanoseconds = divmod(int(timestamp), 1_000_000_000)
+            values = [*pose[:3, 3], *_matrix_to_quaternion(pose[:3, :3])]
+            fields = [f"{seconds}.{nanoseconds:09d}", *(f"{value:.9g}" for value in values)]
+            output.write(" ".join(fields) + "\n")
 
 
 def _matrix_to_quaternion(matrix: np.ndarray) -> tuple[float, float, float, float]:

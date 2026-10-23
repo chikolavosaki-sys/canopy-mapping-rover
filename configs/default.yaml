@@ -34,6 +34,13 @@ simulation:
     footprint_range_m: [1.0, 3.0]
     height_range_m: [0.5, 3.5]   # so shrubs reach 1.0-4.0 m
     points_per_shrub: 70
+  traversal:                   # gentle S-shaped path across the plot middle
+    # KISS-ICP lost track above ~1 m per frame in our tests; 0.4 m at 5 Hz = 2 m/s.
+    step_m: 0.4
+    edge_margin_m: 5.0
+    sway_amplitude_m: 2.0
+    sway_wavelength_m: 4.0
+    sensor_height_m: 0.6
   rocks:
     count: 3
     points_per_rock: 30
@@ -79,8 +86,14 @@ density:
     - [8.0, .inf]
   grid_size_m: 1.0
 
-odometry:
+odometry:                    # passed to KISS-ICP's own KISSConfig
   voxel_size_m: 0.10
+  min_range_m: 0.5           # drop returns from the rover itself
+  max_range_m: 100.0
+  deskew: false              # synthetic scans and WSF-19 have no per-point time
+  max_points_per_voxel: 20
+  frame_period_s: 0.2        # 5 Hz, used for TUM timestamps when frames have none
+  test_ate_max_m: 0.5        # loose ATE bound for the synthetic-traversal test
 
 navigation:
   sector_count: 9

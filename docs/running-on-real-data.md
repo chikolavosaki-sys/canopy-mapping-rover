@@ -30,20 +30,23 @@ Install the optional odometry dependencies in a virtual environment:
 ```bash
 python -m pip install -e ".[core,odometry,dev]"
 canopy-odometry \
-  --bag data/treescope/VAT-0723/recording.bag \
-  --topic /points \
-  --out results/treescope-vat0723
+  --bag data/raw/treescope/WSF-19/input/cloud3.bag \
+  --topic /velodyne/cloud \
+  --out results/odom-wsf19
 ```
 
-Replace `/points` with the actual PointCloud2 topic after inspecting the bag.
-The adapter uses `rosbags` and does not require a ROS installation.
+`/velodyne/cloud` is the confirmed LiDAR topic for WSF-19 (see
+`data/raw/treescope/WSF-19/topics.md`). For another bag, list its topics first.
+The adapter uses `rosbags` and does not require a ROS installation. Outputs:
+`trajectory.tum` (open with evo), `poses.npy`, `map.npy`, `summary.json`.
+This run takes about 2 minutes on a laptop.
 
 List available topics before choosing one:
 
 ```bash
 python - <<'PY'
 from canopy.io.bag_reader import list_topics
-for topic in list_topics("data/treescope/VAT-0723/recording.bag"):
+for topic in list_topics("data/raw/treescope/WSF-19/input/cloud3.bag"):
     print(topic)
 PY
 ```

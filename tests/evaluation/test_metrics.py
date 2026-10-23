@@ -3,7 +3,11 @@
 import numpy as np
 
 from canopy.evaluation.ladder_eval import evaluate_ladder
-from canopy.evaluation.odometry_eval import absolute_position_error, relative_position_error
+from canopy.evaluation.odometry_eval import (
+    absolute_position_error,
+    relative_position_error,
+    relative_to_first,
+)
 from canopy.evaluation.tree_eval import evaluate_trees
 from canopy.simulation.synthetic_forest import Tree
 
@@ -21,6 +25,19 @@ def test_odometry_metrics_detect_translation_error() -> None:
 
     assert absolute_position_error(estimated, truth) > 0
     assert relative_position_error(estimated, truth) > 0
+
+
+def test_relative_to_first_handles_rotated_start() -> None:
+    """A rotated, shifted start becomes identity and later poses follow it."""
+    start = _pose(5.0)
+    start[:2, :2] = [[0.0, -1.0], [1.0, 0.0]]  # facing +Y
+    ahead = start.copy()
+    ahead[:2, 3] += [0.0, 2.0]  # 2 m forward along +Y
+
+    relative = relative_to_first([start, ahead])
+
+    np.testing.assert_allclose(relative[0], np.eye(4), atol=1e-12)
+    np.testing.assert_allclose(relative[1][:3, 3], [2.0, 0.0, 0.0], atol=1e-12)
 
 
 def test_tree_metrics_match_within_gate() -> None:

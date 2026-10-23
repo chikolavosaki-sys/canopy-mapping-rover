@@ -116,13 +116,46 @@ def simulate_scan(
 
 
 def simulate_traversal(
-    forest: Forest, waypoints: list[np.ndarray], sensor: Sensor = Sensor()
+    forest: Forest,
+    waypoints: list[np.ndarray],
+    sensor: Sensor = Sensor(),
+    sensor_frame: bool = False,
 ) -> list[tuple[np.ndarray, PointCloud]]:
-    """Return exact poses and scans at each waypoint."""
-    return [
-        (pose, simulate_scan(forest, pose, sensor, seed=index))
-        for index, pose in enumerate(waypoints)
-    ]
+    """Return exact poses and scans at each waypoint.
+
+    Scans are in world coordinates unless ``sensor_frame`` is true. Use the
+    sensor frame for odometry: a real LiDAR only sees points relative to itself.
+    """
+    sequence = []
+    for index, pose in enumerate(waypoints):
+        scan = simulate_scan(forest, pose, sensor, seed=index)
+        sequence.append((pose, _world_to_sensor(scan, pose) if sensor_frame else scan))
+    return sequence
+
+
+def traversal_poses(
+    plot_size_m: float, length_m: float | None = None, step_m: float | None = None
+) -> list[np.ndarray]:
+    """Return sensor poses along a gentle S-shaped path across the plot middle.
+
+    The path starts ``edge_margin_m`` inside the plot and runs ``length_m``
+    along x (default: to the far margin), one pose about every ``step_m``.
+    The sensor faces along the path, ``sensor_height_m`` above z = 0.
+    """
+    cfg = _SIM["traversal"]
+    margin = cfg["edge_margin_m"]
+    length = plot_size_m - 2 * margin if length_m is None else length_m
+    step = cfg["step_m"] if step_m is None else step_m
+    x = np.linspace(margin, margin + length, int(round(length / step)) + 1)
+    y = plot_size_m / 2 + cfg["sway_amplitude_m"] * np.sin(x / cfg["sway_wavelength_m"])
+    yaw = np.arctan2(np.gradient(y), np.gradient(x))
+    poses = []
+    for px, py, heading in zip(x, y, yaw):
+        pose = np.eye(4)
+        pose[:2, :2] = [[np.cos(heading), -np.sin(heading)], [np.sin(heading), np.cos(heading)]]
+        pose[:3, 3] = (px, py, cfg["sensor_height_m"])
+        poses.append(pose)
+    return poses
 
 
 def _make_ground(rng: np.random.Generator, size: float) -> PointCloud:

@@ -3,7 +3,8 @@
 The project replays recorded LiDAR data and uses a pure-Python/Open3D
 simulator for repeatable navigation tests. The core odometry implementation is
 KISS-ICP: it is LiDAR-only, pip-installable, and can read ROS1/ROS2 bags
-through `rosbags`. FAST-LIO2 is an optional Docker comparison if time permits;
+through `rosbags`. FAST-LIO2 is an optional Docker comparison if time permits
+(see `docs/fast-lio2-comparison.md`);
 it is not a project dependency.
 
 ## Phase map
@@ -43,11 +44,14 @@ The importable package is `canopy` under `src/canopy/`:
 
 The water-body module remains paused outside this pipeline.
 
-Phase 3 provides a thin KISS-ICP `OdometryPipeline` wrapper, TUM trajectory
-export, and a registered-map helper. KISS-ICP is optional at import time, so
-unit tests that do not need it remain runnable without odometry downloads. The
-command-line bag wiring remains deliberately deferred until the real-data
-adapter phase; current tests use synthetic arrays.
+Phase 3 wraps KISS-ICP's `KissICP` class (kiss-icp 1.3.0) frame by frame,
+exports TUM trajectories with exact nanosecond timestamps, and merges scans
+into one map with `register_scans`. Settings come from the `odometry` section
+of `configs/default.yaml`. `canopy-odometry` accepts `--bag` + `--topic`,
+`--frames`, or `--synthetic SEED`; the synthetic mode also writes the exact
+reference path and ATE/RPE. KISS-ICP is optional at import time; its test is
+skipped when the package is missing (as in CI). Scans fed to odometry must be
+in the sensor frame (`simulate_traversal(..., sensor_frame=True)`).
 
 Phase 4 adds simulator-only navigation: scans are reduced to forward angular
 sectors, a hysteretic controller chooses a movement state, and a unicycle

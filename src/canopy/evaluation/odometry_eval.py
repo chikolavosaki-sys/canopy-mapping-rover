@@ -27,6 +27,16 @@ def relative_position_error(
     return float(np.sqrt(np.mean(np.sum((estimate_delta - truth_delta) ** 2, axis=1))))
 
 
+def relative_to_first(poses: list[np.ndarray]) -> list[np.ndarray]:
+    """Express every pose relative to the first, so the path starts at identity.
+
+    Odometry starts at its own origin, so this puts a world-frame reference
+    trajectory into the same frame before comparing them.
+    """
+    first_inverse = np.linalg.inv(np.asarray(poses[0], dtype=float))
+    return [first_inverse @ np.asarray(pose, dtype=float) for pose in poses]
+
+
 def start_to_end_drift(poses: list[np.ndarray]) -> float:
     """Return the distance between the first and final estimated positions."""
     if not poses:

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from src.aerial_context.indices import ndvi, ndwi
+from canopy.aerial_context.indices import ndvi, ndwi
 
 
 def test_ndvi_and_ndwi_values() -> None:

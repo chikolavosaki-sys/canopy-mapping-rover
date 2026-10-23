@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "canopy-mapping-rover"
+version = "0.1.0"
+description = "Synthetic and recorded-data tools for below-canopy forest mapping."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+core = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "open3d>=0.17",
+    "laspy[lazrs]>=2.4",
+    "matplotlib>=3.7",
+    "pyyaml>=6.0",
+    "tqdm>=4.65",
+]
+odometry = [
+    "kiss-icp>=1.2.3",
+    "rosbags>=0.9.23",
+]
+eval = [
+    "evo>=1.28.0",
+    "pandas>=2.0",
+]
+aerial = [
+    "rasterio>=1.3",
+]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

@@ -1,27 +1,61 @@
 # Architecture
 
-The project replays recorded 3D LiDAR and IMU data and uses a simulator for navigation tests. LiDAR-inertial odometry (for example FAST-LIO2 or LIO-SAM) estimates rover motion and registers scans into one point cloud. We then use the same registered cloud in two branches. No real rover hardware is required.
+The project replays recorded LiDAR data and uses a pure-Python/Open3D
+simulator for repeatable navigation tests. The core odometry implementation is
+KISS-ICP: it is LiDAR-only, pip-installable, and can read ROS1/ROS2 bags
+through `rosbags`. FAST-LIO2 is an optional Docker comparison if time permits;
+it is not a project dependency.
+
+## Phase map
 
 ```text
-Recorded LiDAR + IMU or simulated LiDAR
-             |
-             v
- LiDAR-inertial odometry (FAST-LIO2 or LIO-SAM)
-             |
-      registered point cloud
-          /              \
-         v                v
- Navigation branch     Forest analytics branch
- angular sectors       remove ground
- FORWARD/TURN/STOP     height-layer density
- obstacle decisions    stems, shrubs, DBH
+data in:  synthetic forest (simulation) | TreeScope ROS bag | static LAS/PLY plots
+            │                               │                     │
+            ▼                               ▼                     │
+   simulate_scan / traversal        io.bag_reader (rosbags)       │
+            └──────────────┬────────────────┘                     │
+                           ▼                                      │
+              lidar_odometry (KISS-ICP) → TUM poses               │
+                           ▼                                      │
+                 register → one map cloud ◄───────────────────────┘
+                 ┌─────────┴──────────┐
+                 ▼                    ▼
+   navigation (sectors →      forest_analytics
+   state machine, sim only)   ground(CSF) → height-normalise →
+                 │            density bands → ladder-fuel index
+                 │            stems → DBH table
+                 ▼                    ▼
+           evaluation: nav success · ATE/RPE (evo) · tree recall/DBH RMSE · ladder vs shrubs
+                           ▼
+          data out: results/<run>/ — heatmap PNG, CSVs, summary.json, report.md
 ```
 
-The navigation branch divides nearby points into angular sectors and chooses a simple state: `FORWARD`, `TURN`, or `STOP`. The analytics branch removes or models the ground, counts points by height layer, detects stems, and estimates DBH. An optional aerial/satellite layer adds NDVI, GEDI canopy height, or tree-count context; it is not a replacement for below-canopy measurements. The water-body module is separate.
+The importable package is `canopy` under `src/canopy/`:
+
+- `canopy.io` loads point clouds and adapts ROS bags.
+- `canopy.simulation` creates synthetic forests and rover scans.
+- `canopy.lidar_odometry` estimates poses and registers scans.
+- `canopy.navigation` contains simulator-only obstacle decisions.
+- `canopy.forest_analytics` measures ground-normalised density, ladder-fuel
+  proxy, stems, and DBH.
+- `canopy.evaluation` compares outputs with synthetic or dataset references.
+- `canopy.aerial_context` provides optional overhead indices.
+
+The water-body module remains paused outside this pipeline.
 
 ## Open risks
 
-- **IMU availability:** TreeScope is the primary LiDAR-inertial test dataset, but the fallback is LiDAR-only odometry if its usable IMU stream is unavailable.
-- **No live-driving data:** Recorded datasets cannot prove that navigation works safely on our rover; the simulator-versus-real-rover choice is still open.
-- **No ladder-fuel labels:** Ladder fuel must be reported as a height-band point-density proxy, validated against DigiForests shrub labels rather than presented as directly labelled ground truth.
-- **Water module paused:** Water folders remain available for a possible weeks 10-12 stretch goal but are outside the current pipeline.
+- **TreeScope reference trajectory:** TreeScope processed bags publish
+  `/Odometry`, but that trajectory is Faster-LIO output rather than independent
+  ground truth. We will call it a *reference trajectory*, not true ground
+  truth, when reporting ATE/RPE.
+- **Evaluation plan:** Odometry is evaluated using ATE/RPE against the
+  TreeScope reference, start-to-end/loop drift on sequences that return near
+  their start, and exact poses on the synthetic simulator.
+- **IMU availability:** KISS-ICP provides the primary LiDAR-only baseline;
+  TreeScope IMU can support future comparison but is not required for Phase 0.
+- **No live-driving data:** Recorded datasets cannot prove safe rover driving;
+  navigation claims are simulator-only.
+- **No ladder-fuel labels:** Ladder fuel remains a height-band occupancy proxy,
+  checked against DigiForests shrub labels rather than presented as direct
+  biological ground truth.

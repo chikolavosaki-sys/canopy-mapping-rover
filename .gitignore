@@ -10,3 +10,12 @@ venv/
 *.pcd
 *.bag
 *.tif
+*.h5
+*.npz
+*.db3
+*.mcap
+data/
+results/**
+!results/**/*.md
+!results/**/*.png
+!results/**/*.csv

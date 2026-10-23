@@ -1,8 +1,9 @@
-src/water_bodies/ @PRAJWAL_USERNAME
-datasets/water/ @PRAJWAL_USERNAME
-src/lidar_odometry/ @ANWITA_USERNAME
-src/navigation/ @ANWITA_USERNAME
-src/forest_analytics/ @chikolavosaki-sys
-src/aerial_context/ @chikolavosaki-sys
-src/simulation/ @PRAJWAL_USERNAME
-src/evaluation/ @PRAJWAL_USERNAME
+# TODO: replace with real GitHub handle.
+# src/lidar_odometry/ @ANWITA_USERNAME
+# src/navigation/ @ANWITA_USERNAME
+src/forest_analytics/ @chikolavoski-sys
+src/aerial_context/ @chikolavoski-sys
+
+# TODO: replace with real GitHub handle.
+# src/simulation/ @PRAJWAL_USERNAME
+# src/evaluation/ @PRAJWAL_USERNAME

@@ -1,9 +1,8 @@
 """Check dataset web links without downloading dataset files."""
 
-from pathlib import Path
 import re
+from pathlib import Path
 from urllib.request import Request, urlopen
-
 
 README = Path(__file__).parents[1] / "README.md"
 URL_PATTERN = re.compile(r"https?://[^\s|)]+")

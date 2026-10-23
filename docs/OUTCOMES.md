@@ -38,13 +38,14 @@ Seed 0.
 
 | Metric | Value | Target |
 |---|---:|---:|
-| Odometry final drift (% of path) | 0.0414 | < 2 % |
-| Odometry ATE RMSE (m) | 0.0052 | - |
-| Tree recall, scanned map | 0.1667 | >= 0.90 |
+| Odometry final drift (% of path) | 0.0724 | < 2 % |
+| Odometry ATE RMSE (m) | 0.0069 | - |
+| Tree recall, scanned map | 0.3333 | >= 0.90 |
 | Tree recall, perfect cloud (upper bound) | 0.8333 | - |
-| DBH RMSE (m), scanned map | 0.0128 | <= 0.03 |
-| Ladder AUC vs shrub cells, scanned map | 0.9343 | >= 0.75 |
-| Navigation success rate | 0.4000 | >= 0.90 |
+| DBH RMSE (m), scanned map | 0.0399 | <= 0.03 |
+| Ladder AUC vs shrub cells, scanned map | 0.9356 | >= 0.75 |
+| Navigation runs | 80 | >= 50 |
+| Navigation success rate | 0.9625 | >= 0.90 |
 | Navigation collisions | 3 | 0 |
 <!-- demo-results:end -->
 
@@ -55,6 +56,10 @@ Seed 0.
 - Static scans are used for forest analytics, not for odometry.
 - Synthetic odometry is unrealistically easy: the simulated scanner returns the
   same fixed sample points every frame, so ICP matching is nearly perfect.
+- Navigation was tuned on seeds 0-19; the reported runs use unseen seeds
+  (1000+). Remaining collisions come from sparse LiDAR returns on thin trunks,
+  a too-thin margin beside rocks, and rocks barely taller than the rover's
+  ground clearance.
 - The scanned map is sparse (the scanner fires only 16 x 180 rays), so tree
   recall on it is far below the perfect-cloud upper bound until the scanner is
   replaced with ray casting.

@@ -1,6 +1,6 @@
 """Deterministic synthetic forest data for tests and demonstrations."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,6 +30,15 @@ class ShrubVolume:
     maximum: tuple[float, float, float]
 
 
+@dataclass(frozen=True)
+class Rock:
+    """Ground-truth rock: a solid disc the rover must not drive into."""
+
+    x: float
+    y: float
+    radius: float
+
+
 @dataclass
 class Forest:
     """Synthetic forest points and their semantic labels."""
@@ -39,6 +48,7 @@ class Forest:
     trees: list[Tree]
     shrubs: list[ShrubVolume]
     plot_size_m: float
+    rocks: list[Rock] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -74,10 +84,10 @@ def make_forest(
     shrubs, shrub_points = _make_shrubs(rng, plot_size_m)
     points.append(shrub_points)
     labels.append(np.full(len(shrub_points), "shrub"))
-    rocks = _make_rocks(rng, plot_size_m)
-    points.append(rocks)
-    labels.append(np.full(len(rocks), "rock"))
-    return Forest(np.vstack(points), np.concatenate(labels), trees, shrubs, plot_size_m)
+    rocks, rock_points = _make_rocks(rng, plot_size_m)
+    points.append(rock_points)
+    labels.append(np.full(len(rock_points), "rock"))
+    return Forest(np.vstack(points), np.concatenate(labels), trees, shrubs, plot_size_m, rocks)
 
 
 def simulate_scan(
@@ -86,33 +96,44 @@ def simulate_scan(
     sensor: Sensor = Sensor(),
     seed: int = 0,
 ) -> PointCloud:
-    """Sample nearest forest points in angular LiDAR bins, naturally occluding rear points."""
+    """Return the nearest forest point in each beam direction, plus noise (world frame).
+
+    Each of ``beam_count x horizontal_samples`` beams keeps only its closest
+    point, so anything behind a trunk is hidden (occlusion). The work is done
+    one beam ring at a time with array operations instead of one beam at a time.
+    """
     if pose.shape != (4, 4) or sensor.beam_count < 1 or sensor.horizontal_samples < 1:
         raise ValueError("pose must be 4x4 and sensor sample counts must be positive")
     rng = np.random.default_rng(seed)
     relative = _world_to_sensor(forest.points, pose)
     distances = np.linalg.norm(relative, axis=1)
-    azimuth = np.arctan2(relative[:, 1], relative[:, 0])
-    elevation = np.arctan2(relative[:, 2], np.maximum(distances, 1e-9))
-    bins = _scan_bins(sensor)
-    selected: list[np.ndarray] = []
-    for azimuth_bin, elevation_bin in bins:
-        mask = (
-            (np.abs(_angle_difference(azimuth, azimuth_bin)) <= np.pi / sensor.horizontal_samples)
-            & (
-                np.abs(elevation - elevation_bin)
-                <= np.deg2rad(sensor.vertical_fov_deg) / sensor.beam_count
-            )
-            & (distances <= sensor.max_range_m)
-        )
-        indices = np.flatnonzero(mask)
-        if len(indices):
-            selected.append(indices[np.argmin(distances[indices])])
-    if not selected:
+    picks = _nearest_per_beam(relative, distances, sensor)
+    if not len(picks):
         return np.empty((0, 3), dtype=np.float64)
-    result = relative[np.asarray(selected)]
+    result = relative[picks]
     result += rng.normal(0.0, sensor.range_noise_std_m, result.shape)
     return _sensor_to_world(result, pose)
+
+
+def _nearest_per_beam(
+    relative: PointCloud, distances: np.ndarray, sensor: Sensor
+) -> np.ndarray:
+    """Indices of the closest point per beam, ordered ring by ring, then by azimuth."""
+    azimuth = np.arctan2(relative[:, 1], relative[:, 0])
+    elevation = np.arctan2(relative[:, 2], np.maximum(distances, 1e-9))
+    step = 2 * np.pi / sensor.horizontal_samples
+    azimuth_bin = np.round((azimuth + np.pi) / step).astype(int) % sensor.horizontal_samples
+    half_fov = np.deg2rad(sensor.vertical_fov_deg) / 2
+    tolerance = np.deg2rad(sensor.vertical_fov_deg) / sensor.beam_count
+    in_range = distances <= sensor.max_range_m
+    picks = []
+    for ring in np.linspace(-half_fov, half_fov, sensor.beam_count):
+        candidates = np.flatnonzero(in_range & (np.abs(elevation - ring) <= tolerance))
+        # Sort by azimuth bin, then distance; the first entry of each bin is its nearest point.
+        ordered = candidates[np.lexsort((distances[candidates], azimuth_bin[candidates]))]
+        _, first = np.unique(azimuth_bin[ordered], return_index=True)
+        picks.append(ordered[first])
+    return np.concatenate(picks) if picks else np.empty(0, dtype=int)
 
 
 def simulate_traversal(
@@ -218,28 +239,20 @@ def _make_shrubs(
     return shrubs, np.vstack(clouds)
 
 
-def _make_rocks(rng: np.random.Generator, size: float) -> PointCloud:
+def _make_rocks(rng: np.random.Generator, size: float) -> tuple[list[Rock], PointCloud]:
+    """Boulders as hemispheres: the LiDAR sees the same surface the rover can hit."""
     cfg = _SIM["rocks"]
     count, per_rock = cfg["count"], cfg["points_per_rock"]
     margin = cfg["edge_margin_m"]
     centres = rng.uniform(margin, size - margin, size=(count, 2))
-    offsets = rng.normal(0, cfg["spread_std_m"], size=(count * per_rock, 3))
-    offsets[:, 2] = np.abs(offsets[:, 2])
-    base = np.column_stack(
-        (
-            np.repeat(centres[:, 0], per_rock),
-            np.repeat(centres[:, 1], per_rock),
-            np.zeros(count * per_rock),
-        )
-    )
-    return base + offsets
-
-
-def _scan_bins(sensor: Sensor) -> list[tuple[float, float]]:
-    azimuths = np.linspace(-np.pi, np.pi, sensor.horizontal_samples, endpoint=False)
-    half_fov = np.deg2rad(sensor.vertical_fov_deg) / 2
-    elevations = np.linspace(-half_fov, half_fov, sensor.beam_count)
-    return [(azimuth, elevation) for elevation in elevations for azimuth in azimuths]
+    radii = rng.uniform(*cfg["radius_range_m"], size=count)
+    directions = rng.normal(size=(count, per_rock, 3))
+    directions /= np.linalg.norm(directions, axis=2, keepdims=True)
+    directions[:, :, 2] = np.abs(directions[:, :, 2])  # upper half only
+    surface = directions * radii[:, None, None]
+    surface[:, :, :2] += centres[:, None, :]
+    rocks = [Rock(float(x), float(y), float(r)) for (x, y), r in zip(centres, radii)]
+    return rocks, surface.reshape(-1, 3)
 
 
 def _world_to_sensor(points: PointCloud, pose: np.ndarray) -> PointCloud:
@@ -248,7 +261,3 @@ def _world_to_sensor(points: PointCloud, pose: np.ndarray) -> PointCloud:
 
 def _sensor_to_world(points: PointCloud, pose: np.ndarray) -> PointCloud:
     return (pose @ np.column_stack((points, np.ones(len(points)))).T).T[:, :3]
-
-
-def _angle_difference(values: np.ndarray, target: float) -> np.ndarray:
-    return np.arctan2(np.sin(values - target), np.cos(values - target))

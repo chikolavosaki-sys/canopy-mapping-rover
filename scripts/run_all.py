@@ -14,7 +14,7 @@ import numpy as np
 
 from canopy.config import load_config
 from canopy.evaluation.ladder_eval import evaluate_ladder
-from canopy.evaluation.nav_eval import evaluate_navigation
+from canopy.evaluation.nav_eval import evaluate_navigation, summarise
 from canopy.evaluation.odometry_eval import (
     absolute_position_error,
     final_drift_percent,
@@ -49,12 +49,15 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
     cloud_metrics, _ = analyse(forest.points, forest, config, None)
     summary.update({f"map_{key}": value for key, value in map_metrics.items()})
     summary.update({f"cloud_{key}": value for key, value in cloud_metrics.items()})
-    runs = range(seed, seed + demo["navigation_runs"])
-    navigation = evaluate_navigation(
-        runs, demo["plot_size_m"], demo["tree_count"], out_dir / "navigation"
-    )
-    summary["navigation_success"] = sum(run.reached_goal for run in navigation) / len(navigation)
-    summary["navigation_collisions"] = sum(run.collision for run in navigation)
+    nav = config["navigation"]["eval"]
+    first = nav["reported_seed_offset"] + seed
+    seeds = range(first, first + nav["seeds_per_density"])
+    overall = summarise(evaluate_navigation(seeds, out_dir=out_dir / "navigation"))[-1]
+    summary["navigation_runs"] = overall["runs"]
+    summary["navigation_success"] = overall["success_rate"]
+    summary["navigation_collisions"] = overall["collisions"]
+    summary["navigation_timeouts"] = overall["timeouts"]
+    summary["navigation_path_ratio"] = overall["mean_path_ratio"]
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     (out_dir / "trees.json").write_text(json.dumps(map_trees, indent=2) + "\n")
     _write_report(summary, seed, out_dir / "report.md")
@@ -169,10 +172,15 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
         "",
         "## Navigation (simulator)",
         "",
+        "Per-density results: `navigation/navigation_summary.csv`.",
+        "",
         "| Metric | Value |",
         "|---|---:|",
-        f"| Success rate | {summary['navigation_success']:.2f} |",
+        f"| Runs (seeds x forest densities) | {summary['navigation_runs']} |",
+        f"| Success rate | {summary['navigation_success']:.3f} |",
         f"| Collisions | {summary['navigation_collisions']} |",
+        f"| Time-outs | {summary['navigation_timeouts']} |",
+        f"| Mean path ratio (driven / straight line) | {summary['navigation_path_ratio']:.3f} |",
         "",
         "![Ladder-fuel index from the scanned map](ladder_fuel.png)",
     ]
@@ -190,6 +198,7 @@ def update_outcomes(summary: Summary, seed: int, path: Path = OUTCOMES) -> None:
         ("Tree recall, perfect cloud (upper bound)", summary["cloud_tree_recall"], "-"),
         ("DBH RMSE (m), scanned map", summary["map_dbh_rmse_m"], "<= 0.03"),
         ("Ladder AUC vs shrub cells, scanned map", summary["map_ladder_auc"], ">= 0.75"),
+        ("Navigation runs", summary["navigation_runs"], ">= 50"),
         ("Navigation success rate", summary["navigation_success"], ">= 0.90"),
         ("Navigation collisions", summary["navigation_collisions"], "0"),
     ]

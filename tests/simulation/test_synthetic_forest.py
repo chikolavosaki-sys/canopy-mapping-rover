@@ -33,3 +33,16 @@ def test_nearer_point_occludes_farther_point() -> None:
 
     assert len(scan) == 1
     np.testing.assert_allclose(scan[0], [3.0, 0.0, 0.0], atol=0.1)
+
+
+def test_rocks_are_solid_hemispheres() -> None:
+    """Rock points lie on the surface the rover can collide with."""
+    forest = make_forest(seed=1, plot_size_m=20, n_trees=2)
+    rock_points = forest.points[forest.labels == "rock"]
+    per_rock = len(rock_points) // len(forest.rocks)
+
+    for index, rock in enumerate(forest.rocks):
+        points = rock_points[index * per_rock : (index + 1) * per_rock]
+        radius = np.linalg.norm(points - [rock.x, rock.y, 0.0], axis=1)
+        np.testing.assert_allclose(radius, rock.radius)
+        assert points[:, 2].min() >= 0

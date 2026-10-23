@@ -47,7 +47,7 @@ def test_update_outcomes_replaces_only_the_marked_block(tmp_path) -> None:
         "odometry_drift_percent", "odometry_ate_rmse_m", "map_tree_recall", "cloud_tree_recall",
         "map_dbh_rmse_m", "map_ladder_auc", "navigation_success",
     )
-    summary = {key: 0.5 for key in keys} | {"navigation_collisions": 0}
+    summary = {key: 0.5 for key in keys} | {"navigation_collisions": 0, "navigation_runs": 80}
 
     update_outcomes(summary, 3, doc)
     text = doc.read_text()

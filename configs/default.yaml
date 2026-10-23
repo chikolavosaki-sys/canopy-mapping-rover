@@ -41,10 +41,10 @@ simulation:
     sway_amplitude_m: 2.0
     sway_wavelength_m: 4.0
     sensor_height_m: 0.6
-  rocks:
+  rocks:                       # solid boulders: points lie on a hemisphere of this radius
     count: 3
-    points_per_rock: 30
-    spread_std_m: 0.3
+    points_per_rock: 120
+    radius_range_m: [0.3, 0.7]
     edge_margin_m: 1.0
 
 sensor:
@@ -99,20 +99,29 @@ navigation:
   sector_count: 9
   sector_fov_deg: 180.0        # sectors span this field of view in front of the rover
   forward_radius_m: 8.0
-  obstacle_min_height_m: 0.15  # points below this count as ground
+  obstacle_min_height_m: 0.30  # rover ground clearance: anything lower passes under the chassis
   rover_height_m: 2.0
   rover_radius_m: 0.35
+  sensor_height_m: 0.6
   step_size_m: 0.25
-  turn_angle_deg: 30.0
+  turn_angle_deg: 15.0         # in-place rotation per step while avoiding
+  forward_turn_max_deg: 15.0   # most the rover steers towards the goal per step while driving
   max_steps: 1000
-  safety_distance_m: 1.5
-  stop_distance_fraction: 0.5  # STOP when the centre is closer than this x safety distance
-  hysteresis_steps: 3
-  goal_heading_weight: 0.25
+  safety_distance_m: 1.5       # start avoiding when the corridor ahead is closer than this
+  clear_margin_m: 0.5          # resume driving only when clear by safety + this (hysteresis)
+  corridor_margin_m: 0.15      # corridor half-width = rover radius + this
+  stop_distance_fraction: 0.5  # STOP when every sector is closer than this x safety distance
+  goal_heading_weight: 0.25    # side bonus (x forward radius) for turning towards the goal
+  goal_tolerance_m: 0.35
   eval:
     plot_size_m: 30.0
-    tree_count: 10
+    tree_counts: [10, 20, 40, 80]  # forest densities: about 110-890 trees per hectare
+    seeds_per_density: 20      # 4 x 20 = 80 runs (target: >= 50)
+    # The controller was tuned on seeds 0-19; reported runs start here so they are unseen.
+    reported_seed_offset: 1000
     start_goal_margin_m: 1.0   # start/goal sit this far inside the plot edges
+    start_clearance_m: 1.0     # start/goal must be this far from any trunk or rock
+    start_search_step_m: 0.5   # shift start/goal sideways by this until clear
 
 evaluation:
   tree_match_gate_m: 0.5
@@ -121,6 +130,5 @@ demo:
   plot_size_m: 20.0
   tree_count: 6
   points_per_tree: 1000
-  navigation_runs: 5
   stem_cluster_radius_m: 0.45  # tighter than dbh.cluster_radius_m for the small demo plot
   stem_min_points: 10

@@ -53,10 +53,17 @@ reference path and ATE/RPE. KISS-ICP is optional at import time; its test is
 skipped when the package is missing (as in CI). Scans fed to odometry must be
 in the sensor frame (`simulate_traversal(..., sensor_frame=True)`).
 
-Phase 4 adds simulator-only navigation: scans are reduced to forward angular
-sectors, a hysteretic controller chooses a movement state, and a unicycle
-rover is checked against synthetic stem geometry for collisions. Repeated
-seed runs write navigation metrics without claiming real-rover safety.
+Phase 4 adds simulator-only navigation. Each step the rover scans from a
+LiDAR 0.6 m above its base; `navigation.sectors` turns the rover-frame points
+into 9 forward sector distances, a rover-wide corridor clearance, and a
+footprint clearance. `navigation.controller` is a FORWARD / TURN_LEFT /
+TURN_RIGHT / STOP state machine: it turns in place as soon as the corridor is
+blocked, commits to one turn side, and resumes only when clear by an extra
+margin (hysteresis). FORWARD steers towards the goal only when that direction
+and the next footprint are clear. Collisions use trunk cylinders and rock
+cross-sections at the rover's ground clearance. `evaluation.nav_eval` runs
+seeds x forest densities and writes per-run and per-density CSVs. These are
+simulator results, not real-rover safety claims.
 
 Phase 5 connects everything in `scripts/run_all.py`: a simulated drive is
 tracked with KISS-ICP, the scans are registered into one map, the map is

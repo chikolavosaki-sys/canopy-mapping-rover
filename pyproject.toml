@@ -37,6 +37,7 @@ dev = [
 
 [project.scripts]
 canopy-analyze = "canopy.forest_analytics.cli:main"
+canopy-odometry = "canopy.lidar_odometry.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

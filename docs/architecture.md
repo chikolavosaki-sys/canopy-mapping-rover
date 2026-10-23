@@ -43,6 +43,12 @@ The importable package is `canopy` under `src/canopy/`:
 
 The water-body module remains paused outside this pipeline.
 
+Phase 3 provides a thin KISS-ICP `OdometryPipeline` wrapper, TUM trajectory
+export, and a registered-map helper. KISS-ICP is optional at import time, so
+unit tests that do not need it remain runnable without odometry downloads. The
+command-line bag wiring remains deliberately deferred until the real-data
+adapter phase; current tests use synthetic arrays.
+
 ## Open risks
 
 - **TreeScope reference trajectory:** TreeScope processed bags publish

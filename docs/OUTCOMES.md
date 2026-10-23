@@ -28,23 +28,33 @@ synthetic testing first; the ladder score is not a direct fire-behaviour label.
 
 ## Demo results
 
-`python scripts/run_all.py --seed 0 --out results/demo` regenerates this table
-without downloading any data. Values below are produced by the latest local
-run and are examples, not claims about real forest performance.
+`python scripts/run_all.py --seed 0 --update-outcomes` regenerates the table
+between the markers below (full report: `results/demo/report.md`). It needs no
+downloads and takes about 2 minutes. Values are synthetic results, not claims
+about real forests.
 
-| Metric | Value |
-|---|---:|
-| Tree recall | See `results/demo/summary.json` |
-| Tree precision | See `results/demo/summary.json` |
-| DBH RMSE (m) | See `results/demo/summary.json` |
-| Ladder Spearman correlation | See `results/demo/summary.json` |
-| Ladder AUC | See `results/demo/summary.json` |
-| Navigation success | See `results/demo/summary.json` |
-| Synthetic ATE RMSE (m) | See `results/demo/summary.json` |
-| Synthetic RPE RMSE (m) | See `results/demo/summary.json` |
+<!-- demo-results:start -->
+Seed 0.
+
+| Metric | Value | Target |
+|---|---:|---:|
+| Odometry final drift (% of path) | 0.0414 | < 2 % |
+| Odometry ATE RMSE (m) | 0.0052 | - |
+| Tree recall, scanned map | 0.1667 | >= 0.90 |
+| Tree recall, perfect cloud (upper bound) | 0.8333 | - |
+| DBH RMSE (m), scanned map | 0.0128 | <= 0.03 |
+| Ladder AUC vs shrub cells, scanned map | 0.9343 | >= 0.75 |
+| Navigation success rate | 0.4000 | >= 0.90 |
+| Navigation collisions | 3 | 0 |
+<!-- demo-results:end -->
 
 ## Honest limits
 
 - The rover is simulated; there is no real rover hardware in this project.
 - Ladder fuel is a proxy based on height-band point density, not a direct label.
 - Static scans are used for forest analytics, not for odometry.
+- Synthetic odometry is unrealistically easy: the simulated scanner returns the
+  same fixed sample points every frame, so ICP matching is nearly perfect.
+- The scanned map is sparse (the scanner fires only 16 x 180 rays), so tree
+  recall on it is far below the perfect-cloud upper bound until the scanner is
+  replaced with ray casting.

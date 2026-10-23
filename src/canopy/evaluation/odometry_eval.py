@@ -27,6 +27,20 @@ def relative_position_error(
     return float(np.sqrt(np.mean(np.sum((estimate_delta - truth_delta) ** 2, axis=1))))
 
 
+def final_drift_percent(estimated: list[np.ndarray], reference: list[np.ndarray]) -> float:
+    """Return the final position error as a percentage of the reference path length.
+
+    This is the "drift < 2% of distance travelled" metric in docs/OUTCOMES.md.
+    Both trajectories must start at the same pose (see ``relative_to_first``).
+    """
+    _check_lengths(estimated, reference)
+    truth = _positions(reference)
+    length = float(np.sum(np.linalg.norm(np.diff(truth, axis=0), axis=1)))
+    if length == 0:
+        raise ValueError("reference trajectory does not move")
+    return 100.0 * float(np.linalg.norm(_positions(estimated)[-1] - truth[-1])) / length
+
+
 def relative_to_first(poses: list[np.ndarray]) -> list[np.ndarray]:
     """Express every pose relative to the first, so the path starts at identity.
 

@@ -17,6 +17,8 @@ venv/
 data/*
 !data/MANIFEST.csv
 results/**
+# Re-include folders, or the exceptions below can never match.
+!results/**/
 !results/**/*.md
 !results/**/*.png
 !results/**/*.csv

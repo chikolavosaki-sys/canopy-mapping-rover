@@ -58,9 +58,14 @@ sectors, a hysteretic controller chooses a movement state, and a unicycle
 rover is checked against synthetic stem geometry for collisions. Repeated
 seed runs write navigation metrics without claiming real-rover safety.
 
-Phase 5 connects the synthetic forest, analytics, navigation, and evaluation
-pieces in `scripts/run_all.py`. It writes a report, summary JSON, tree metrics,
-navigation CSV, and ladder-fuel heatmap under `results/<run>/`.
+Phase 5 connects everything in `scripts/run_all.py`: a simulated drive is
+tracked with KISS-ICP, the scans are registered into one map, the map is
+placed in world coordinates with the known start pose, and forest analytics
+run on it. The same analytics also run on the perfect simulated cloud as an
+upper bound, so the report shows what scanning and odometry cost. Outputs go
+to `results/<run>/` (report, summary JSON, tree list, navigation CSV,
+ladder-fuel heatmap); `--update-outcomes` refreshes the table in
+`docs/OUTCOMES.md`.
 
 Phase 6 adds instruction-only dataset layout validators, common TUM/tree-table
 adapters, and KISS-ICP bag CLI wiring through `rosbags`. Dataset scripts never

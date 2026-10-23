@@ -5,6 +5,7 @@ import numpy as np
 from canopy.evaluation.ladder_eval import evaluate_ladder
 from canopy.evaluation.odometry_eval import (
     absolute_position_error,
+    final_drift_percent,
     relative_position_error,
     relative_to_first,
 )
@@ -25,6 +26,14 @@ def test_odometry_metrics_detect_translation_error() -> None:
 
     assert absolute_position_error(estimated, truth) > 0
     assert relative_position_error(estimated, truth) > 0
+
+
+def test_final_drift_is_end_error_over_path_length() -> None:
+    """Ending 0.2 m off after a 10 m path is 2 % drift."""
+    truth = [_pose(0), _pose(5), _pose(10)]
+    estimated = [_pose(0), _pose(5), _pose(10.2)]
+
+    assert abs(final_drift_percent(estimated, truth) - 2.0) < 1e-9
 
 
 def test_relative_to_first_handles_rotated_start() -> None:

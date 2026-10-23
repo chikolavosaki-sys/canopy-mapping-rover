@@ -1,0 +1,6 @@
+run,success,collision,timeout,path_length
+0,True,False,False,17.75
+1,False,True,False,15.75
+2,True,False,False,18.0
+3,False,True,False,15.75
+4,False,True,False,15.5

@@ -1,17 +1,21 @@
 """Read project settings from ``configs/default.yaml``.
 
 Modules take their default numbers from here, so every tunable value lives in
-one YAML file. Pass a different path to ``load_config`` to try other settings.
+one YAML file. Pass a different path to ``load_config`` to try other settings,
+or set the ``CANOPY_CONFIG`` environment variable before importing ``canopy``
+modules to change the defaults everywhere (command-line ``--config`` does this).
 """
 
 import copy
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-DEFAULT_CONFIG = Path(__file__).resolve().parents[2] / "configs" / "default.yaml"
+_REPO_CONFIG = Path(__file__).resolve().parents[2] / "configs" / "default.yaml"
+DEFAULT_CONFIG = Path(os.environ.get("CANOPY_CONFIG", _REPO_CONFIG))
 
 
 @lru_cache(maxsize=8)

@@ -32,6 +32,8 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[core,odometry,eval,dev]"
 pytest -q && ruff check .
 python scripts/run_all.py --seed 0      # synthetic demo, no downloads
+python scripts/show_demo.py             # figures in results/demo/figures/
+python scripts/show_demo.py --view 3d   # rotate the scanned forest in a 3-D window
 ```
 
 All tunable numbers live in `configs/default.yaml`. On WSL, Open3D also needs

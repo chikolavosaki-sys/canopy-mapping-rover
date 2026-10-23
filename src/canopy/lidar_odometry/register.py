@@ -20,7 +20,7 @@ def transform_points(points: np.ndarray, pose: np.ndarray) -> np.ndarray:
 def register_scans(
     scans: Sequence[np.ndarray],
     poses: Sequence[np.ndarray],
-    voxel_size: float = load_config()["voxel_size_m"],
+    voxel_size: float = load_config()["map_voxel_size_m"],
 ) -> np.ndarray:
     """Transform scans into the first world frame and return one downsampled map."""
     if len(scans) != len(poses):

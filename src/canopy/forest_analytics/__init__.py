@@ -1,8 +1,8 @@
-"""Forest-structure measurements from registered point clouds."""
+"""Forest-structure measurements from registered point clouds.
 
-from .density import density_grid
-from .ground import normalize_heights
-from .ladder_fuel import ladder_fuel_index
-from .stems import detect_stems
-
-__all__ = ["density_grid", "detect_stems", "ladder_fuel_index", "normalize_heights"]
+Modules: ``ground`` (CSF ground, DTM, height normalisation), ``stems`` (DBH),
+``density`` (height-band occupancy), ``ladder_fuel`` (ladder-fuel proxy),
+``pipeline`` (all of them in order). Import from the modules directly; this
+package file stays empty so ``canopy-analyze --config`` can take effect
+before any settings are read.
+"""

@@ -1,12 +1,13 @@
 """Simulated spinning LiDAR that ray-casts against the synthetic forest.
 
-The forest is turned into triangle meshes once (ground surface, trunk
-cylinders, rock spheres, and crowns/shrubs as clusters of small "leaf clump"
-spheres, so foliage is porous). Each scan fires ``beam_count x
-horizontal_samples`` rays from the sensor; Open3D's ``RaycastingScene``
-returns the first surface each ray hits, so anything behind a trunk is
-hidden (true occlusion). Gaussian noise is added along each ray, like real
-range noise. Every returned point also gets the label of what it hit.
+The forest is turned into triangle meshes once: the ground surface, trunk
+cylinders, rock spheres, and crowns/shrubs as many small, randomly tilted
+flat "leaf patches" (porous foliage that scatters returns like leaves).
+Each scan fires ``beam_count x horizontal_samples`` rays from the sensor;
+Open3D's ``RaycastingScene`` returns the first surface each ray hits, so
+anything behind a trunk is hidden (true occlusion). Gaussian noise is added
+along each ray, like real range noise. Every returned point also gets the
+label of what it hit.
 """
 
 from dataclasses import dataclass
@@ -123,8 +124,8 @@ def _meshes(forest: Forest) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     return {
         "ground": _ground_mesh(forest),
         "stem": _trunks(forest),
-        "crown": _clumps(forest, "crown", _MESH["crown_clump_radius_m"]),
-        "shrub": _clumps(forest, "shrub", _MESH["shrub_clump_radius_m"]),
+        "crown": _leaves(forest, "crown", _MESH["crown_leaf_size_m"]),
+        "shrub": _leaves(forest, "shrub", _MESH["shrub_leaf_size_m"]),
         "rock": rocks,
     }
 
@@ -141,10 +142,26 @@ def _trunks(forest: Forest) -> tuple[np.ndarray, np.ndarray]:
     return _copies(_unit_cylinder(), centres, scales)
 
 
-def _clumps(forest: Forest, label: str, radius: float) -> tuple[np.ndarray, np.ndarray]:
-    """One small sphere per labelled point: porous foliage."""
+def _leaves(forest: Forest, label: str, size: float) -> tuple[np.ndarray, np.ndarray]:
+    """One flat, randomly tilted triangle (a leaf patch) per labelled point.
+
+    Flat patches scatter returns. Spheres, used at first, drew neat little arcs
+    in the LiDAR that the stem detector mistook for thin trunks.
+    """
     centres = forest.points[forest.labels == label]
-    return _copies(_unit_sphere(), centres, np.full((len(centres), 3), radius))
+    if not len(centres):
+        return np.empty((0, 3)), np.empty((0, 3), dtype=np.int64)
+    rng = np.random.default_rng(len(centres))  # deterministic for a given forest
+    normal = rng.normal(size=(len(centres), 3))
+    normal /= np.linalg.norm(normal, axis=1, keepdims=True)
+    helper = np.where(np.abs(normal[:, :1]) < 0.9, [[1.0, 0, 0]], [[0, 1.0, 0]])
+    u = np.cross(normal, helper)
+    u /= np.linalg.norm(u, axis=1, keepdims=True)
+    v = np.cross(normal, u)
+    angles = np.deg2rad([0.0, 120.0, 240.0])
+    corners = [centres + size * (np.cos(a) * u + np.sin(a) * v) for a in angles]
+    vertices = np.stack(corners, axis=1).reshape(-1, 3)
+    return vertices, np.arange(len(vertices)).reshape(-1, 3)
 
 
 def _ground_mesh(forest: Forest) -> tuple[np.ndarray, np.ndarray]:

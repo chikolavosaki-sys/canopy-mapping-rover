@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from canopy.config import load_config
+from canopy.config import load_config, section
 from canopy.evaluation.ladder_eval import evaluate_ladder
 from canopy.evaluation.nav_eval import evaluate_navigation, summarise
 from canopy.evaluation.odometry_eval import (
@@ -25,10 +25,11 @@ from canopy.evaluation.odometry_eval import (
 )
 from canopy.evaluation.tree_eval import evaluate_trees
 from canopy.forest_analytics.ground import normalize_heights
-from canopy.forest_analytics.ladder_fuel import ladder_fuel_index, save_ladder_report
-from canopy.forest_analytics.stems import detect_stems, stems_to_rows
+from canopy.forest_analytics.ladder_fuel import save_ladder_report
+from canopy.forest_analytics.pipeline import analyse_points
+from canopy.forest_analytics.stems import stems_to_rows
 from canopy.lidar_odometry import register_scans, run_kiss_icp, transform_points
-from canopy.simulation.lidar import simulate_traversal
+from canopy.simulation.lidar import scan_with_labels, simulate_traversal
 from canopy.simulation.synthetic_forest import Forest, make_forest, traversal_poses
 
 Summary = dict[str, float | int]
@@ -46,6 +47,7 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
     map_metrics, map_trees = analyse(world_map, forest, config, out_dir)
     exact_metrics, _ = analyse(exact_map, forest, config, None)
     cloud_metrics, _ = analyse(forest.points, forest, config, None)
+    summary.update(ground_scores(forest))
     results = {"map": map_metrics, "exact": exact_metrics, "cloud": cloud_metrics}
     for prefix, metrics in results.items():
         summary.update({f"{prefix}_{key}": value for key, value in metrics.items()})
@@ -58,7 +60,9 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
     summary["navigation_collisions"] = overall["collisions"]
     summary["navigation_timeouts"] = overall["timeouts"]
     summary["navigation_path_ratio"] = overall["mean_path_ratio"]
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    clean = {key: None if isinstance(value, float) and np.isnan(value) else value
+             for key, value in summary.items()}  # JSON has no NaN; missing -> null
+    (out_dir / "summary.json").write_text(json.dumps(clean, indent=2, allow_nan=False) + "\n")
     (out_dir / "trees.json").write_text(json.dumps(map_trees, indent=2) + "\n")
     _write_report(summary, seed, out_dir / "report.md")
     return summary
@@ -92,19 +96,15 @@ def map_with_odometry(forest: Forest) -> tuple[np.ndarray, np.ndarray, Summary]:
 def analyse(
     points: np.ndarray, forest: Forest, config: dict, out_dir: Path | None
 ) -> tuple[Summary, list[dict[str, float | int]]]:
-    """Run ground removal, ladder fuel, and stem detection, then score them."""
-    demo = config["demo"]
-    _, normalized = normalize_heights(points)
-    score, origin = ladder_fuel_index(normalized)
-    resolution = config["ladder_fuel"]["grid_size_m"]
+    """Run the shared analytics pipeline on one cloud and score it against the truth."""
+    result = analyse_points(points)
     if out_dir is not None:
-        save_ladder_report(score, origin, resolution, out_dir)
-    stems = detect_stems(
-        normalized, radius=demo["stem_cluster_radius_m"], min_points=demo["stem_min_points"]
-    )
-    detected = stems_to_rows(stems)
+        save_ladder_report(result.ladder, out_dir)
+    detected = stems_to_rows(result.stems)
     trees = evaluate_trees(detected, forest.trees)
-    ladder = evaluate_ladder(score, shrub_cells(forest, score.shape, origin, resolution))
+    index = result.ladder.ladder_fuel_index
+    shrubs = shrub_cells(forest, index.shape, result.ladder.origin, result.ladder.resolution)
+    ladder = evaluate_ladder(index, shrubs)
     metrics: Summary = {
         "trees_detected": len(detected),
         "tree_recall": trees.recall,
@@ -115,6 +115,25 @@ def analyse(
         "ladder_auc": ladder["auc"],
     }
     return metrics, detected
+
+
+def ground_scores(forest: Forest) -> Summary:
+    """Ground precision/recall on the labelled scans of the demo drive (exact poses).
+
+    Rock points are left out of the precision: CSF drapes over low boulders and
+    calls them terrain, which is normal for ground filters (docs/OUTCOMES.md).
+    """
+    poses = traversal_poses(forest)
+    scans = [scan_with_labels(forest, pose, seed=index) for index, pose in enumerate(poses)]
+    points = np.vstack([scan[0] for scan in scans])
+    labels = np.concatenate([scan[1] for scan in scans])
+    _, _, is_ground = normalize_heights(points)
+    truth = labels == "ground"
+    hits = int((is_ground & truth).sum())
+    return {
+        "ground_precision": hits / max(int((is_ground & (labels != "rock")).sum()), 1),
+        "ground_recall": hits / max(int(truth.sum()), 1),
+    }
 
 
 def shrub_cells(
@@ -173,6 +192,10 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
     ]
     lines += [
         "",
+        f"Ground classification ({section('ground')['method']}) on the labelled demo scans: "
+        f"precision {summary['ground_precision']:.3f} (rocks excluded), "
+        f"recall {summary['ground_recall']:.3f}.",
+        "",
         "## Navigation (simulator)",
         "",
         "Per-density results: `navigation/navigation_summary.csv`.",
@@ -201,6 +224,9 @@ def update_outcomes(summary: Summary, seed: int, path: Path = OUTCOMES) -> None:
         ("Tree recall, exact-pose map (no odometry error)", summary["exact_tree_recall"], "-"),
         ("Tree recall, perfect cloud (upper bound)", summary["cloud_tree_recall"], "-"),
         ("DBH RMSE (m), scanned map", summary["map_dbh_rmse_m"], "<= 0.03"),
+        ("DBH RMSE (m), exact-pose map", summary["exact_dbh_rmse_m"], "<= 0.03"),
+        ("Ground precision (rocks excluded) / recall",
+         f"{summary['ground_precision']:.3f} / {summary['ground_recall']:.3f}", "-"),
         ("Ladder AUC vs shrub cells, scanned map", summary["map_ladder_auc"], ">= 0.75"),
         ("Navigation runs", summary["navigation_runs"], ">= 50"),
         ("Navigation success rate", summary["navigation_success"], ">= 0.90"),
@@ -212,9 +238,11 @@ def update_outcomes(summary: Summary, seed: int, path: Path = OUTCOMES) -> None:
     path.write_text(text[:start] + block + text[end:])
 
 
-def _fmt(value: float | int) -> str:
-    """Counts as whole numbers, everything else to four decimals."""
-    return str(value) if isinstance(value, int) else f"{value:.4f}"
+def _fmt(value: float | int | str) -> str:
+    """Counts as whole numbers, missing values as n/a, everything else to four decimals."""
+    if isinstance(value, (int, str)):
+        return str(value)
+    return "n/a" if np.isnan(value) else f"{value:.4f}"
 
 
 def main() -> None:

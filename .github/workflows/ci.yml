@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # Open3D (simulated LiDAR) needs these system libraries on Ubuntu.
-      - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0 libgl1 libgomp1
+      - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0 libgl1 libegl1 libgomp1 libx11-6
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[core,dev]"
       - run: ruff check .

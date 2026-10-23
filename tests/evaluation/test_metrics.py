@@ -63,3 +63,11 @@ def test_ladder_auc_prefers_shrub_cells() -> None:
     result = evaluate_ladder(np.array([0.1, 0.8, 0.2, 0.9]), np.array([0, 1, 0, 1]))
 
     assert result["auc"] > 0.9
+
+
+def test_tree_metrics_without_matches_report_no_dbh_error() -> None:
+    """A detection 3 m from the only tree is not a match, so DBH error is NaN, not 0."""
+    result = evaluate_trees([{"x": 3.0, "y": 0.0, "dbh": 0.3}], [Tree(0, 0, 0.3, 10)])
+
+    assert result.recall == 0.0 and result.precision == 0.0
+    assert np.isnan(result.dbh_rmse) and np.isnan(result.dbh_bias)

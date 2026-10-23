@@ -2,7 +2,8 @@
 # canopy.config, so change a value here rather than inside a function.
 # Units are in the key name: _m metres, _deg degrees, _hz hertz.
 
-voxel_size_m: 0.10          # map downsampling and density occupancy voxels
+voxel_size_m: 0.10          # height-layer thickness for density occupancy
+map_voxel_size_m: 0.02      # registered-map resolution; DBH fitting needs ~1-2 cm detail
 
 simulation:
   plot_size_m: 50.0
@@ -46,8 +47,8 @@ simulation:
     cylinder_resolution: 24    # sides per trunk cylinder
     sphere_resolution: 4       # detail of rock and foliage-clump spheres
     trunk_sink_m: 0.3          # trunks start this far below ground so slopes leave no gap
-    crown_clump_radius_m: 0.20 # each crown point becomes a leaf clump this size (porous crowns)
-    shrub_clump_radius_m: 0.10
+    crown_leaf_size_m: 0.20    # each crown point becomes a flat leaf patch this size (porous)
+    shrub_leaf_size_m: 0.10
   rocks:                       # solid boulders: points lie on a hemisphere of this radius
     count: 3
     points_per_rock: 120
@@ -61,29 +62,50 @@ sensor:                       # roughly a Velodyne VLP-16
   max_range_m: 30.0
   range_noise_std_m: 0.01      # Gaussian noise along each ray
 
-ground:
-  grid_size_m: 1.0
-  lowest_quantile: 0.10
-  ransac_distance_m: 0.15      # used by the RANSAC fallback (step 5)
+ground:                        # canopy.forest_analytics.ground
+  method: csf                  # csf (Cloth Simulation Filter) or ransac (fallback)
+  csf:                         # parameters of the cloth-simulation-filter package
+    cloth_resolution_m: 0.5    # grid size of the simulated cloth
+    rigidness: 2               # 1 steep, 2 relief, 3 flat terrain
+    class_threshold_m: 0.15    # points this close to the cloth are ground
+    iterations: 500
+    slope_smooth: true         # post-process steep slopes
+  grid_size_m: 1.0             # terrain model (DTM) cell size
+  ransac_tile_m: 5.0           # fallback: one RANSAC plane per tile of this size
+  ransac_distance_m: 0.15      # fallback: points this close to the tile plane are ground
   ransac_iterations: 100
 
-dbh:
-  slice_min_m: 1.2
+dbh:                           # canopy.forest_analytics.stems (approach after 3DFIN / FSCT)
+  slice_min_m: 1.2             # breast-height slice
   slice_max_m: 1.4
-  cluster_radius_m: 0.8
-  min_points: 20
+  dbscan_eps_m: 0.10           # DBSCAN neighbour distance in the slice
+  dbscan_min_points: 5
+  min_points: 15               # fewer points in a cluster -> not a stem
+  ransac_iterations: 200
+  ransac_inlier_m: 0.02        # circle inlier distance
+  min_inlier_fraction: 0.6
+  min_arc_deg: 90.0            # visible part of the circle; less gives unreliable DBH
   min_radius_m: 0.025
-  max_radius_m: 0.30
-  max_fit_residual_m: 0.05
+  max_radius_m: 0.40
+  max_fit_residual_m: 0.02
+  verticality_slices_m: [0.8, 2.0]   # also fit here to check the stem is upright
+  verticality_half_height_m: 0.1
+  max_lean_deg: 15.0
+  max_radius_change: 0.35      # slice radii may differ from DBH radius by this fraction
+  stem_removal_margin_m: 0.10  # points this close to a stem are removed before ladder fuel
 
-ladder_fuel:
+ladder_fuel:                   # canopy.forest_analytics.ladder_fuel
   bands_m:
     - [1.0, 4.0]
     - [1.0, 8.0]
-  band_weights: [0.7, 0.3]
   grid_size_m: 1.0
-  occupancy_voxel_m: 0.10
-  crown_gap_min_m: 0.50        # used by the vertical-gap feature (step 5)
+  occupancy_voxel_m: 0.10      # height-layer thickness for occupancy and gaps
+  surface_min_m: 0.3           # vegetation below this is ground/litter
+  crown_min_m: 4.0             # lowest height counted as crown base
+  crown_search_max_m: 20.0
+  gap_norm_m: 4.0              # an empty gap this tall or taller = no ladder
+  # index = w1 * occupancy(1-4 m) + w2 * occupancy(1-8 m) + w3 * continuity
+  weights: [0.5, 0.2, 0.3]
 
 density:
   bands_m:
@@ -142,6 +164,4 @@ evaluation:
 demo:
   plot_size_m: 20.0
   tree_count: 6
-  points_per_tree: 1000
-  stem_cluster_radius_m: 0.45  # tighter than dbh.cluster_radius_m for the small demo plot
-  stem_min_points: 10
+  points_per_tree: 4000        # dense enough that the perfect cloud is a fair upper bound

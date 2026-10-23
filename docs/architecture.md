@@ -22,11 +22,11 @@ data in:  synthetic forest (simulation) | TreeScope ROS bag | static LAS/PLY plo
                  ┌─────────┴──────────┐
                  ▼                    ▼
    navigation (sectors →      forest_analytics
-   state machine, sim only)   ground(CSF) → height-normalise →
-                 │            density bands → ladder-fuel index
-                 │            stems → DBH table
+   state machine, sim only)   ground (CSF) → DTM → height-normalise →
+                 │            stems (DBSCAN + RANSAC circle) → DBH table →
+                 │            remove stem points → density bands → ladder-fuel index
                  ▼                    ▼
-           evaluation: nav success · ATE/RPE (evo) · tree recall/DBH RMSE · ladder vs shrubs
+           evaluation: nav success · ATE/RPE · tree recall/DBH RMSE · ladder vs shrubs
                            ▼
           data out: results/<run>/ — heatmap PNG, CSVs, summary.json, report.md
 ```
@@ -43,6 +43,15 @@ The importable package is `canopy` under `src/canopy/`:
 - `canopy.aerial_context` provides optional overhead indices.
 
 The water-body module remains paused outside this pipeline.
+
+Forest analytics run in this order (`forest_analytics.pipeline`):
+`ground` classifies ground with CSF (RANSAC planes per 5 m tile as fallback),
+fits a DTM by local plane fits, and height-normalises; `stems` finds DBH in
+the 1.2-1.4 m slice (DBSCAN, RANSAC circle, Kasa + geometric refinement,
+arc and verticality checks); stem points are removed; `density` and
+`ladder_fuel` then measure height-layer occupancy and the vertical gap. The
+registered map keeps 2 cm voxels (`map_voxel_size_m`) because coarser maps
+leave too few trunk points for a circle fit.
 
 Phase 3 wraps KISS-ICP's `KissICP` class (kiss-icp 1.3.0) frame by frame,
 exports TUM trajectories with exact nanosecond timestamps, and merges scans

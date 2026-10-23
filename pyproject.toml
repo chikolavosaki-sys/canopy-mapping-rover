@@ -19,6 +19,7 @@ core = [
     "pyyaml>=6.0",
     "tqdm>=4.65",
     "h5py>=3.10",
+    "cloth-simulation-filter>=1.1.5",
 ]
 odometry = [
     "kiss-icp>=1.2.3",

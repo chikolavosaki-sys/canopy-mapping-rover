@@ -21,10 +21,13 @@ Phase 4 adds repeatable simulator navigation metrics: goal success, collision,
 timeout, and path length. These metrics describe the synthetic controller only,
 not deployment safety on a physical rover.
 
-Phase 2 adds the first forest-analytics path: a grid-lowest-point terrain
-model, height normalization, voxel occupancy density, a ladder-fuel proxy
-report, and breast-height stem circle fitting. These outputs are intended for
-synthetic testing first; the ladder score is not a direct fire-behaviour label.
+Forest analytics (`canopy.forest_analytics.pipeline`, shared by
+`canopy-analyze` and the demo): CSF ground classification with a RANSAC
+fallback, a plane-fitted DTM, height normalisation, stem detection (DBSCAN,
+RANSAC circle, geometric refinement, 0.8 m / 2.0 m verticality check), stem
+removal, height-layer density, and a ladder-fuel index from 1-4 m and 1-8 m
+occupancy plus the vertical gap to the crown base. The ladder score is a
+proxy checked against shrub labels, not a fire-behaviour label.
 
 ## Demo results
 
@@ -38,13 +41,15 @@ Seed 0.
 
 | Metric | Value | Target |
 |---|---:|---:|
-| Odometry final drift (% of path) | 11.7841 | < 2 % |
-| Odometry ATE RMSE (m) | 0.8668 | - |
-| Tree recall, scanned map | 0.1667 | >= 0.90 |
-| Tree recall, exact-pose map (no odometry error) | 0.8333 | - |
-| Tree recall, perfect cloud (upper bound) | 0.8333 | - |
-| DBH RMSE (m), scanned map | 0.1889 | <= 0.03 |
-| Ladder AUC vs shrub cells, scanned map | 0.8258 | >= 0.75 |
+| Odometry final drift (% of path) | 10.7746 | < 2 % |
+| Odometry ATE RMSE (m) | 0.7880 | - |
+| Tree recall, scanned map | 0.0000 | >= 0.90 |
+| Tree recall, exact-pose map (no odometry error) | 1.0000 | - |
+| Tree recall, perfect cloud (upper bound) | 1.0000 | - |
+| DBH RMSE (m), scanned map | n/a | <= 0.03 |
+| DBH RMSE (m), exact-pose map | 0.0051 | <= 0.03 |
+| Ground precision (rocks excluded) / recall | 0.993 / 0.979 | - |
+| Ladder AUC vs shrub cells, scanned map | 0.8767 | >= 0.75 |
 | Navigation runs | 80 | >= 50 |
 | Navigation success rate | 0.9375 | >= 0.90 |
 | Navigation collisions | 4 | 0 |
@@ -69,5 +74,12 @@ Seed 0.
   blind zone; reported runs use fresh seeds (2000+). Remaining collisions are
   mostly small rocks only a few cm taller than the rover's 0.3 m ground
   clearance, which the per-scan ground plane and sensor noise can hide.
+- CSF's cloth drapes over low boulders, so rock points are often classed as
+  ground (ground precision is reported with rocks excluded).
+- Simulated foliage is flat triangles and trunks are perfect cylinders; real
+  bark, branches and leaves will make stem fitting harder than here.
+- With KISS-ICP's drift in the demo forest, no detected tree lands within the
+  0.5 m matching gate; with exact poses recall is 1.0 and DBH RMSE 0.5 cm.
+  Better odometry, not better analytics, is the next bottleneck.
 - The rover stays level on slopes (no pitch or roll), and its pose for
   obstacle memory is exact; a real rover would use its own odometry.

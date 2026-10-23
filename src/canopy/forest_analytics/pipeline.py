@@ -1,70 +1,97 @@
-"""Configuration-driven forest analytics pipeline."""
+"""Forest-analytics pipeline shared by ``canopy-analyze`` and the synthetic demo.
+
+ground (CSF) -> height-normalise -> stems + DBH -> remove stem points ->
+density bands and ladder-fuel proxy. ``analyse_points`` returns everything in
+memory; ``analyze_cloud`` also writes the result files.
+"""
 
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import yaml
 
+from canopy.config import section
 from canopy.io import load_points
 
-from .density import density_grid
-from .ground import normalize_heights
-from .ladder_fuel import ladder_fuel_index, save_ladder_report
-from .stems import detect_stems, stems_to_rows
+from .density import DensityGrid, density_grid
+from .ground import GroundModel, normalize_heights
+from .ladder_fuel import LadderFuel, ladder_fuel, save_ladder_report
+from .stems import Stem, detect_stems, remove_stem_points, stems_to_rows
+
+TREE_FIELDS = ["x", "y", "dbh", "fit_residual", "n_points", "arc_deg", "lean_deg"]
 
 
-def analyze_cloud(cloud_path: str | Path, config_path: str | Path, out_dir: str | Path) -> dict:
-    """Run ground normalization, density, ladder proxy, and stem detection."""
-    config = yaml.safe_load(Path(config_path).read_text())
+@dataclass(frozen=True)
+class Analysis:
+    """All analytics outputs for one point cloud."""
+
+    ground: GroundModel
+    is_ground: np.ndarray
+    normalized: np.ndarray
+    stems: list[Stem]
+    density: DensityGrid
+    ladder: LadderFuel
+
+
+def analyse_points(points: np.ndarray) -> Analysis:
+    """Run the full analytics chain on an (N, 3) cloud in map coordinates."""
+    model, normalized, is_ground = normalize_heights(points)
+    stems = detect_stems(normalized)
+    vegetation = remove_stem_points(normalized[~is_ground], stems)
+    ladder = ladder_fuel(vegetation if len(vegetation) else normalized)
+    return Analysis(model, is_ground, normalized, stems, density_grid(normalized), ladder)
+
+
+def analyze_cloud(cloud_path: str | Path, out_dir: str | Path) -> dict:
+    """Analyse a point-cloud file and write the results to ``out_dir``."""
     points = load_points(cloud_path)
-    ground = config["ground"]
-    _, normalized = normalize_heights(
-        points, ground["grid_size_m"], ground["lowest_quantile"]
-    )
+    result = analyse_points(points)
     destination = Path(out_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    np.save(destination / "normalised_cloud.npy", normalized)
-    density = density_grid(
-        normalized,
-        tuple(tuple(band) for band in config["density"]["bands_m"]),
-        config["density"]["grid_size_m"],
-        config["voxel_size_m"],
-    )
-    np.save(destination / "density.npy", density.occupancy)
-    ladder = config["ladder_fuel"]
-    score, origin = ladder_fuel_index(
-        normalized,
-        ladder["grid_size_m"],
-        ladder["occupancy_voxel_m"],
-        tuple(tuple(band) for band in ladder["bands_m"]),
-        tuple(ladder["band_weights"]),
-    )
-    save_ladder_report(score, origin, ladder["grid_size_m"], destination)
-    stems = detect_stems(normalized, **_stem_config(config["dbh"]))
-    _write_tree_table(stems_to_rows(stems), destination / "trees.csv")
-    summary = {"n_points": len(points), "n_stems": len(stems)}
-    (destination / "summary.json").write_text(json.dumps(summary, indent=2))
+    np.save(destination / "normalised_cloud.npy", result.normalized)
+    np.save(destination / "ground_mask.npy", result.is_ground)
+    np.save(destination / "dtm.npy", result.ground.elevations)
+    _write_density(result.density, destination / "density.csv")
+    save_ladder_report(result.ladder, destination)
+    _write_tree_table(stems_to_rows(result.stems), destination / "trees.csv")
+    summary = _summary(points, result)
+    (destination / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     return summary
+
+
+def _summary(points: np.ndarray, result: Analysis) -> dict:
+    dbh = np.array([stem.dbh for stem in result.stems])
+    index = result.ladder.ladder_fuel_index
+    return {
+        "n_points": int(len(points)),
+        "ground_method": section("ground")["method"],
+        "ground_fraction": float(result.is_ground.mean()),
+        "n_stems": len(result.stems),
+        "mean_dbh_m": float(dbh.mean()) if len(dbh) else None,
+        "ladder_cells": int(index.size),
+        "ladder_mean_index": float(index.mean()),
+        "ladder_cells_above_0_5": int((index > 0.5).sum()),
+    }
+
+
+def _write_density(density: DensityGrid, path: Path) -> None:
+    """One row per cell: centre coordinates and the occupancy fraction of each band."""
+    names = [f"band_{low:g}_{high:g}m" for low, high in density.bands]
+    with path.open("w", newline="", encoding="utf-8") as output:
+        writer = csv.writer(output)
+        writer.writerow(["x", "y", *names])
+        for (i, j), _ in np.ndenumerate(density.occupancy[:, :, 0]):
+            x = density.origin[0] + (i + 0.5) * density.resolution
+            y = density.origin[1] + (j + 0.5) * density.resolution
+            writer.writerow([f"{x:.2f}", f"{y:.2f}",
+                             *(f"{value:.4f}" for value in density.occupancy[i, j])])
 
 
 def _write_tree_table(rows: list[dict[str, float | int]], path: Path) -> None:
     """Write detected trees in a simple tabular format."""
-    fields = ["x", "y", "dbh", "fit_residual", "n_points"]
     with path.open("w", newline="", encoding="utf-8") as output:
-        writer = csv.DictWriter(output, fieldnames=fields)
+        writer = csv.DictWriter(output, fieldnames=TREE_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-
-
-def _stem_config(config: dict) -> dict:
-    return {
-        "slice_min": config["slice_min_m"],
-        "slice_max": config["slice_max_m"],
-        "radius": config["cluster_radius_m"],
-        "min_points": config["min_points"],
-        "min_dbh": config["min_radius_m"] * 2,
-        "max_dbh": config["max_radius_m"] * 2,
-        "max_residual": config["max_fit_residual_m"],
-    }

@@ -8,7 +8,7 @@ Canopy Mapping Rover is a BIT Mesra B.Tech CSE minor project. We are building an
 |---|---|---|
 | Prithvi (`@chikolavosaki-sys`) | Repository owner | Forest analytics and final report (PROPOSED) |
 | Anwita (GitHub handle TODO) | LiDAR and navigation | LiDAR odometry (KISS-ICP) and simulated rover navigation |
-| Prajwal (GitHub handle TODO) | Simulator and evaluation (PROPOSED) | Simulator world and evaluation scripts |
+| Prajjwal (GitHub handle TODO) | Simulator and evaluation (PROPOSED) | Simulator world and evaluation scripts |
 
 The proposed ownership change is pending team confirmation. The water body module is paused, not deleted, and may return as a weeks 10-12 stretch goal.
 

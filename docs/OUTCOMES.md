@@ -17,6 +17,10 @@
 
 The system processes a forest recording and outputs a map highlighting zones with the most ladder fuel.
 
+Phase 4 adds repeatable simulator navigation metrics: goal success, collision,
+timeout, and path length. These metrics describe the synthetic controller only,
+not deployment safety on a physical rover.
+
 Phase 2 adds the first forest-analytics path: a grid-lowest-point terrain
 model, height normalization, voxel occupancy density, a ladder-fuel proxy
 report, and breast-height stem circle fitting. These outputs are intended for

@@ -49,6 +49,11 @@ unit tests that do not need it remain runnable without odometry downloads. The
 command-line bag wiring remains deliberately deferred until the real-data
 adapter phase; current tests use synthetic arrays.
 
+Phase 4 adds simulator-only navigation: scans are reduced to forward angular
+sectors, a hysteretic controller chooses a movement state, and a unicycle
+rover is checked against synthetic stem geometry for collisions. Repeated
+seed runs write navigation metrics without claiming real-rover safety.
+
 ## Open risks
 
 - **TreeScope reference trajectory:** TreeScope processed bags publish

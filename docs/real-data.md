@@ -114,3 +114,31 @@ per LiDAR frame (the bag has 92). Each folder contains:
 | Ground / stem segmentation | VAT-0723 `.h5` (145 labelled frames) |
 | Ladder fuel vs shrub labels | **None yet:** blocked on DigiForests |
 | Navigation | Simulator only (by design) |
+
+## First full pipeline run on real data (2026-10-23)
+
+WSF-19 `cloud3.bag`, KISS-ICP + `canopy-analyze`, default settings. Commands:
+
+```bash
+canopy-odometry --bag data/raw/treescope/WSF-19/input/cloud3.bag --topic /velodyne/cloud \
+  --out results/real/wsf19
+# keep the dense part of the map: the drive's bounding box +-20 m (z: -5 / +25 m)
+python -c "import numpy as np; from canopy.io import crop_box; \
+m=np.load('results/real/wsf19/map.npy'); p=np.load('results/real/wsf19/poses.npy')[:,:3,3]; \
+np.save('results/real/wsf19/map_crop.npy', crop_box(m, p.min(0)-[20,20,5], p.max(0)+[20,20,25]))"
+canopy-analyze results/real/wsf19/map_crop.npy --out results/real/wsf19/analysis
+```
+
+| Step | Result |
+|---|---|
+| Odometry | 92 frames, 8.6 m driven, 6.5 m start-to-end |
+| Map | 4.3 M points (2 cm voxels); cropped to 2.7 M over 40 x 46 m |
+| Ground (CSF) | 12 % of points |
+| Ladder fuel | 2,016 cells; 1,627 with any 1-8 m vegetation; 333 (17 %) score > 0.5; mean 0.23 |
+| Stems | 5 detected vs 63 labelled trees; detected DBH median 23.5 cm (14-47 cm) vs labelled median 23.4 cm (7-45 cm, converted from inches) |
+
+Limits: the comparison is by counts and DBH ranges only, because the KISS-ICP map
+and the ground-truth labels are in different frames (per-tree matching is #12 / #15).
+The detected stems have only 15-20 points each, close to the minimum; odometry
+drift blurs trunks across scans, as in the simulator, so most trees fail the
+circle checks. Heatmap: `results/real/wsf19/analysis/ladder_fuel.png`.

@@ -5,7 +5,11 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
+from canopy.config import section
+
 PointCloud = NDArray[np.float64]
+_SIM = section("simulation")
+_SENSOR = section("sensor")
 
 
 @dataclass(frozen=True)
@@ -41,18 +45,18 @@ class Forest:
 class Sensor:
     """Simple spinning LiDAR settings."""
 
-    beam_count: int = 16
-    vertical_fov_deg: float = 30.0
-    horizontal_samples: int = 180
-    max_range_m: float = 30.0
-    range_noise_std_m: float = 0.01
+    beam_count: int = _SENSOR["beam_count"]
+    vertical_fov_deg: float = _SENSOR["vertical_fov_deg"]
+    horizontal_samples: int = _SENSOR["horizontal_samples"]
+    max_range_m: float = _SENSOR["max_range_m"]
+    range_noise_std_m: float = _SENSOR["range_noise_std_m"]
 
 
 def make_forest(
     seed: int,
-    plot_size_m: float = 50.0,
-    n_trees: int = 40,
-    points_per_tree: int = 180,
+    plot_size_m: float = _SIM["plot_size_m"],
+    n_trees: int = _SIM["tree_count"],
+    points_per_tree: int = _SIM["points_per_tree"],
 ) -> Forest:
     """Create a reproducible labelled forest with uneven ground and obstacles."""
     if plot_size_m <= 0 or n_trees < 1 or points_per_tree < 8:
@@ -63,7 +67,7 @@ def make_forest(
     for _ in range(n_trees):
         tree = _random_tree(rng, plot_size_m)
         stem = _make_stem(rng, tree, points_per_tree)
-        crown = _make_crown(rng, tree, max(30, points_per_tree // 3))
+        crown = _make_crown(rng, tree, _crown_count(points_per_tree))
         points.extend((stem, crown))
         labels.extend((np.full(len(stem), "stem"), np.full(len(crown), "crown")))
         trees.append(tree)
@@ -122,54 +126,78 @@ def simulate_traversal(
 
 
 def _make_ground(rng: np.random.Generator, size: float) -> PointCloud:
-    grid = np.linspace(0, size, max(12, int(size / 2)))
+    cfg = _SIM["ground"]
+    grid = np.linspace(0, size, max(cfg["min_points_per_side"], int(size / cfg["spacing_m"])))
     x, y = np.meshgrid(grid, grid)
-    z = 0.08 * np.sin(x / 4) + 0.06 * np.cos(y / 5) + 0.12 * x / size
+    (a1, a2), (w1, w2) = cfg["wave_amplitudes_m"], cfg["wave_lengths_m"]
+    z = a1 * np.sin(x / w1) + a2 * np.cos(y / w2) + cfg["slope_rise_m"] * x / size
     return np.column_stack((x.ravel(), y.ravel(), z.ravel()))
 
 
 def _random_tree(rng: np.random.Generator, size: float) -> Tree:
+    cfg = _SIM["trees"]
+    margin = cfg["edge_margin_m"]
     return Tree(
-        float(rng.uniform(2, size - 2)),
-        float(rng.uniform(2, size - 2)),
-        float(rng.uniform(0.10, 0.60)),
-        float(rng.uniform(8, 20)),
+        float(rng.uniform(margin, size - margin)),
+        float(rng.uniform(margin, size - margin)),
+        float(rng.uniform(*cfg["dbh_range_m"])),
+        float(rng.uniform(*cfg["height_range_m"])),
     )
 
 
 def _make_stem(rng: np.random.Generator, tree: Tree, count: int) -> PointCloud:
     angles = rng.uniform(0, 2 * np.pi, count)
-    heights = rng.uniform(0, tree.height * 0.72, count)
-    radius = tree.dbh / 2 + rng.normal(0, 0.01, count)
+    cfg = _SIM["trees"]
+    heights = rng.uniform(0, tree.height * cfg["stem_height_fraction"], count)
+    radius = tree.dbh / 2 + rng.normal(0, cfg["bark_noise_std_m"], count)
     return np.column_stack(
         (tree.x + radius * np.cos(angles), tree.y + radius * np.sin(angles), heights)
     )
 
 
+def _crown_count(points_per_tree: int) -> int:
+    cfg = _SIM["trees"]
+    return max(cfg["crown_min_points"], points_per_tree // cfg["crown_points_divisor"])
+
+
 def _make_crown(rng: np.random.Generator, tree: Tree, count: int) -> PointCloud:
-    centre = np.array([tree.x, tree.y, tree.height * 0.78])
-    spread = np.array([tree.height * 0.20, tree.height * 0.20, tree.height * 0.14])
+    cfg = _SIM["trees"]
+    centre = np.array([tree.x, tree.y, tree.height * cfg["crown_centre_fraction"]])
+    spread = tree.height * np.array(cfg["crown_spread_fraction"])
     return centre + rng.normal(size=(count, 3)) * spread
 
 
 def _make_shrubs(
     rng: np.random.Generator, size: float
 ) -> tuple[list[ShrubVolume], PointCloud]:
+    cfg = _SIM["shrubs"]
+    low, high = cfg["edge_margin_m"], size - cfg["footprint_range_m"][1]
     shrubs, clouds = [], []
-    for _ in range(max(2, int(size / 15))):
-        minimum = np.array([rng.uniform(1, size - 3), rng.uniform(1, size - 3), 0.5])
-        maximum = minimum + [rng.uniform(1, 3), rng.uniform(1, 3), rng.uniform(0.5, 3.5)]
+    for _ in range(max(cfg["min_count"], int(size / cfg["area_per_shrub_m"]))):
+        minimum = np.array([rng.uniform(low, high), rng.uniform(low, high), cfg["base_height_m"]])
+        maximum = minimum + [
+            rng.uniform(*cfg["footprint_range_m"]),
+            rng.uniform(*cfg["footprint_range_m"]),
+            rng.uniform(*cfg["height_range_m"]),
+        ]
         shrubs.append(ShrubVolume(tuple(minimum), tuple(maximum)))
-        clouds.append(rng.uniform(minimum, maximum, size=(70, 3)))
+        clouds.append(rng.uniform(minimum, maximum, size=(cfg["points_per_shrub"], 3)))
     return shrubs, np.vstack(clouds)
 
 
 def _make_rocks(rng: np.random.Generator, size: float) -> PointCloud:
-    centres = rng.uniform(1, size - 1, size=(3, 2))
-    offsets = rng.normal(0, 0.3, size=(90, 3))
+    cfg = _SIM["rocks"]
+    count, per_rock = cfg["count"], cfg["points_per_rock"]
+    margin = cfg["edge_margin_m"]
+    centres = rng.uniform(margin, size - margin, size=(count, 2))
+    offsets = rng.normal(0, cfg["spread_std_m"], size=(count * per_rock, 3))
     offsets[:, 2] = np.abs(offsets[:, 2])
     base = np.column_stack(
-        (np.repeat(centres[:, 0], 30), np.repeat(centres[:, 1], 30), np.zeros(90))
+        (
+            np.repeat(centres[:, 0], per_rock),
+            np.repeat(centres[:, 1], per_rock),
+            np.zeros(count * per_rock),
+        )
     )
     return base + offsets
 

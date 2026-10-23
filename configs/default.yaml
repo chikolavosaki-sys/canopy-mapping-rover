@@ -1,37 +1,76 @@
-# Shared defaults for later phases. Keep numbers here so experiments are reproducible.
-voxel_size_m: 0.10
+# Every tunable number in the project. Code reads defaults from here through
+# canopy.config, so change a value here rather than inside a function.
+# Units are in the key name: _m metres, _deg degrees, _hz hertz.
+
+voxel_size_m: 0.10          # map downsampling and density occupancy voxels
+
 simulation:
   plot_size_m: 50.0
   tree_count: 40
-  ground_slope_deg: 15.0
-  stem_dbh_min_m: 0.10
-  stem_dbh_max_m: 0.60
-  shrub_min_height_m: 0.5
-  shrub_max_height_m: 4.0
+  points_per_tree: 180
+  ground:
+    spacing_m: 2.0          # grid spacing of ground points
+    min_points_per_side: 12
+    # Smooth ground: z = a1*sin(x/w1) + a2*cos(y/w2) + slope_rise_m * x/plot_size.
+    # TODO(step 5): replace with noisy ground and slopes up to 15 deg.
+    wave_amplitudes_m: [0.08, 0.06]
+    wave_lengths_m: [4.0, 5.0]
+    slope_rise_m: 0.12
+  trees:
+    edge_margin_m: 2.0
+    dbh_range_m: [0.10, 0.60]
+    height_range_m: [8.0, 20.0]
+    stem_height_fraction: 0.72   # stem points cover this fraction of tree height
+    bark_noise_std_m: 0.01
+    crown_centre_fraction: 0.78
+    crown_spread_fraction: [0.20, 0.20, 0.14]   # x, y, z spread as a fraction of height
+    crown_min_points: 30
+    crown_points_divisor: 3      # crown points = points_per_tree / divisor
+  shrubs:
+    area_per_shrub_m: 15.0       # one shrub per this many metres of plot side
+    min_count: 2
+    edge_margin_m: 1.0
+    base_height_m: 0.5
+    footprint_range_m: [1.0, 3.0]
+    height_range_m: [0.5, 3.5]   # so shrubs reach 1.0-4.0 m
+    points_per_shrub: 70
+  rocks:
+    count: 3
+    points_per_rock: 30
+    spread_std_m: 0.3
+    edge_margin_m: 1.0
+
 sensor:
   beam_count: 16
   vertical_fov_deg: 30.0
+  horizontal_samples: 180
   max_range_m: 30.0
   range_noise_std_m: 0.01
+
 ground:
   grid_size_m: 1.0
   lowest_quantile: 0.10
-  ransac_distance_m: 0.15
+  ransac_distance_m: 0.15      # used by the RANSAC fallback (step 5)
   ransac_iterations: 100
+
 dbh:
   slice_min_m: 1.2
   slice_max_m: 1.4
+  cluster_radius_m: 0.8
   min_points: 20
-  min_radius_m: 0.05
+  min_radius_m: 0.025
   max_radius_m: 0.30
   max_fit_residual_m: 0.05
+
 ladder_fuel:
   bands_m:
     - [1.0, 4.0]
     - [1.0, 8.0]
+  band_weights: [0.7, 0.3]
   grid_size_m: 1.0
   occupancy_voxel_m: 0.10
-  crown_gap_min_m: 0.50
+  crown_gap_min_m: 0.50        # used by the vertical-gap feature (step 5)
+
 density:
   bands_m:
     - [0.0, 1.0]
@@ -39,13 +78,36 @@ density:
     - [4.0, 8.0]
     - [8.0, .inf]
   grid_size_m: 1.0
+
+odometry:
+  voxel_size_m: 0.10
+
 navigation:
   sector_count: 9
+  sector_fov_deg: 180.0        # sectors span this field of view in front of the rover
   forward_radius_m: 8.0
-  safety_distance_m: 1.5
+  obstacle_min_height_m: 0.15  # points below this count as ground
   rover_height_m: 2.0
   rover_radius_m: 0.35
   step_size_m: 0.25
+  turn_angle_deg: 30.0
   max_steps: 1000
+  safety_distance_m: 1.5
+  stop_distance_fraction: 0.5  # STOP when the centre is closer than this x safety distance
   hysteresis_steps: 3
   goal_heading_weight: 0.25
+  eval:
+    plot_size_m: 30.0
+    tree_count: 10
+    start_goal_margin_m: 1.0   # start/goal sit this far inside the plot edges
+
+evaluation:
+  tree_match_gate_m: 0.5
+
+demo:
+  plot_size_m: 20.0
+  tree_count: 6
+  points_per_tree: 1000
+  navigation_runs: 5
+  stem_cluster_radius_m: 0.45  # tighter than dbh.cluster_radius_m for the small demo plot
+  stem_min_points: 10

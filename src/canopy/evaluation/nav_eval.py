@@ -3,23 +3,27 @@
 import csv
 from pathlib import Path
 
+from canopy.config import section
 from canopy.navigation.controller import Controller
 from canopy.simulation.rover_sim import RunResult, run_rover
 from canopy.simulation.synthetic_forest import make_forest
 
+_EVAL = section("navigation")["eval"]
+
 
 def evaluate_navigation(
     seeds: range,
-    plot_size_m: float = 30.0,
-    n_trees: int = 10,
+    plot_size_m: float = _EVAL["plot_size_m"],
+    n_trees: int = _EVAL["tree_count"],
     out_dir: str | Path | None = None,
+    margin_m: float = _EVAL["start_goal_margin_m"],
 ) -> list[RunResult]:
-    """Run one start-to-goal traversal per seed and optionally write CSV."""
+    """Drive across the plot's middle once per seed and optionally write CSV."""
     results = []
     for seed in seeds:
         forest = make_forest(seed, plot_size_m, n_trees)
-        start = _pose(1.0, plot_size_m / 2)
-        goal = [plot_size_m - 1.0, plot_size_m / 2, 0.0]
+        start = _pose(margin_m, plot_size_m / 2)
+        goal = [plot_size_m - margin_m, plot_size_m / 2, 0.0]
         result = run_rover(forest, start, goal, Controller())
         results.append(result)
     if out_dir is not None:

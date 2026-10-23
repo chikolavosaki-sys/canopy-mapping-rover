@@ -5,6 +5,10 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from canopy.config import section
+
+_GROUND = section("ground")
+
 
 @dataclass(frozen=True)
 class GroundModel:
@@ -15,7 +19,11 @@ class GroundModel:
     elevations: NDArray[np.float64]
 
 
-def fit_ground(points: ArrayLike, resolution: float = 1.0, quantile: float = 0.1) -> GroundModel:
+def fit_ground(
+    points: ArrayLike,
+    resolution: float = _GROUND["grid_size_m"],
+    quantile: float = _GROUND["lowest_quantile"],
+) -> GroundModel:
     """Fit a robust grid-lowest-point digital terrain model."""
     values = _points(points)
     if resolution <= 0 or not 0 < quantile <= 1:
@@ -32,7 +40,9 @@ def fit_ground(points: ArrayLike, resolution: float = 1.0, quantile: float = 0.1
 
 
 def normalize_heights(
-    points: ArrayLike, resolution: float = 1.0, quantile: float = 0.1
+    points: ArrayLike,
+    resolution: float = _GROUND["grid_size_m"],
+    quantile: float = _GROUND["lowest_quantile"],
 ) -> tuple[GroundModel, NDArray[np.float64]]:
     """Return a ground model and each point's height above its local ground."""
     values = _points(points)

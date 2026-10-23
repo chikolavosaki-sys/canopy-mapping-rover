@@ -4,6 +4,9 @@ from enum import Enum
 
 import numpy as np
 
+from canopy.config import section
+
+_NAV = section("navigation")
 
 class MotionState(str, Enum):
     """Discrete rover movement command."""
@@ -19,13 +22,15 @@ class Controller:
 
     def __init__(
         self,
-        safety_distance: float = 1.5,
-        hysteresis_steps: int = 3,
-        goal_heading_weight: float = 0.25,
+        safety_distance: float = _NAV["safety_distance_m"],
+        hysteresis_steps: int = _NAV["hysteresis_steps"],
+        goal_heading_weight: float = _NAV["goal_heading_weight"],
+        stop_distance_fraction: float = _NAV["stop_distance_fraction"],
     ) -> None:
         if safety_distance <= 0 or hysteresis_steps < 1:
             raise ValueError("safety_distance must be positive and hysteresis_steps >= 1")
         self.safety_distance = safety_distance
+        self.stop_distance = safety_distance * stop_distance_fraction
         self.hysteresis_steps = hysteresis_steps
         self.goal_heading_weight = goal_heading_weight
         self.state = MotionState.FORWARD
@@ -39,7 +44,7 @@ class Controller:
             raise ValueError("at least three sector distances are required")
         middle = len(distances) // 2
         central = distances[max(0, middle - 1) : middle + 2]
-        if np.all(central < self.safety_distance / 2):
+        if np.all(central < self.stop_distance):
             proposed = MotionState.STOP
         elif np.min(central) >= self.safety_distance:
             proposed = MotionState.FORWARD

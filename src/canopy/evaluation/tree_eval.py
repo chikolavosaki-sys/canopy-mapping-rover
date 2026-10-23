@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+from canopy.config import section
 from canopy.simulation.synthetic_forest import Tree
 
 
@@ -20,7 +21,9 @@ class TreeMetrics:
 
 
 def evaluate_trees(
-    detected: list[dict[str, float | int]], truth: list[Tree], gate: float = 0.5
+    detected: list[dict[str, float | int]],
+    truth: list[Tree],
+    gate: float = section("evaluation")["tree_match_gate_m"],
 ) -> TreeMetrics:
     """Match XY tree positions within a gate and report DBH errors in metres."""
     if gate <= 0:

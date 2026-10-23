@@ -4,9 +4,11 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from canopy.config import section
+
 
 def run_kiss_icp(
-    frames: Sequence[np.ndarray], voxel_size: float = 0.1
+    frames: Sequence[np.ndarray], voxel_size: float = section("odometry")["voxel_size_m"]
 ) -> list[np.ndarray]:
     """Estimate one world pose per LiDAR frame with KISS-ICP.
 

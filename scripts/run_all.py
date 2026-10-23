@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
+from canopy.config import load_config
 from canopy.evaluation.ladder_eval import evaluate_ladder
 from canopy.evaluation.nav_eval import evaluate_navigation
 from canopy.evaluation.odometry_eval import absolute_position_error, relative_position_error
@@ -18,16 +19,25 @@ from canopy.simulation.synthetic_forest import make_forest
 
 def run_demo(seed: int, out_dir: Path) -> dict[str, float | int]:
     """Generate synthetic data, run analytics and navigation, and write a report."""
-    forest = make_forest(seed, plot_size_m=20.0, n_trees=6, points_per_tree=1000)
+    config = load_config()
+    demo = config["demo"]
+    plot, trees = demo["plot_size_m"], demo["tree_count"]
+    forest = make_forest(seed, plot, trees, demo["points_per_tree"])
     _, normalized = normalize_heights(forest.points)
     score, origin = ladder_fuel_index(normalized)
-    save_ladder_report(score, origin, 1.0, out_dir)
-    detected = stems_to_rows(detect_stems(normalized, radius=0.45, min_points=10))
+    save_ladder_report(score, origin, config["ladder_fuel"]["grid_size_m"], out_dir)
+    stems = detect_stems(
+        normalized, radius=demo["stem_cluster_radius_m"], min_points=demo["stem_min_points"]
+    )
+    detected = stems_to_rows(stems)
     tree_metrics = evaluate_trees(detected, forest.trees)
     shrub_cells = _shrub_cells(forest, score.shape, origin)
     ladder_metrics = evaluate_ladder(score, shrub_cells)
-    navigation = evaluate_navigation(range(seed, seed + 5), 20.0, 6, out_dir / "navigation")
+    runs = range(seed, seed + demo["navigation_runs"])
+    navigation = evaluate_navigation(runs, plot, trees, out_dir / "navigation")
     nav_success = sum(result.reached_goal for result in navigation) / len(navigation)
+    # PLACEHOLDER, not a measurement: a hand-made 1% drift trajectory. Step 3 of
+    # the fix plan replaces this with KISS-ICP on a simulated traversal.
     poses = [_pose(float(index), 0.0) for index in range(5)]
     estimated = [_pose(float(index) + 0.01 * index, 0.0) for index in range(5)]
     summary = {

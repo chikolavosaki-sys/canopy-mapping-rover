@@ -4,10 +4,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from canopy.config import section
 from canopy.navigation.controller import Controller, MotionState
 from canopy.navigation.sectors import nearest_obstacles
 
 from .synthetic_forest import Forest, Sensor, simulate_scan
+
+_NAV = section("navigation")
 
 
 @dataclass(frozen=True)
@@ -15,8 +18,8 @@ class Rover:
     """Rover state and physical limits."""
 
     pose: np.ndarray
-    radius: float = 0.35
-    step_size: float = 0.25
+    radius: float = _NAV["rover_radius_m"]
+    step_size: float = _NAV["step_size_m"]
 
 
 @dataclass(frozen=True)
@@ -36,14 +39,16 @@ def run_rover(
     goal: np.ndarray,
     controller: Controller,
     sensor: Sensor = Sensor(),
-    max_steps: int = 1000,
-    rover_radius: float = 0.35,
-    step_size: float = 0.25,
+    max_steps: int = _NAV["max_steps"],
+    rover_radius: float = _NAV["rover_radius_m"],
+    step_size: float = _NAV["step_size_m"],
+    turn_angle_deg: float = _NAV["turn_angle_deg"],
 ) -> RunResult:
     """Drive a rover toward a goal and report collisions and timeout."""
     pose = np.asarray(start, dtype=float).copy()
     goal = np.asarray(goal, dtype=float)
     poses = [pose.copy()]
+    turn = np.deg2rad(turn_angle_deg)
     path_length = 0.0
     collision = False
     for _ in range(max_steps):
@@ -55,9 +60,9 @@ def run_rover(
         state = controller.update(nearest_obstacles(local), _heading_error(pose, goal))
         heading = np.arctan2(delta[1], delta[0])
         if state == MotionState.TURN_LEFT:
-            heading += np.pi / 6
+            heading += turn
         elif state == MotionState.TURN_RIGHT:
-            heading -= np.pi / 6
+            heading -= turn
         elif state == MotionState.STOP:
             poses.append(pose.copy())
             continue

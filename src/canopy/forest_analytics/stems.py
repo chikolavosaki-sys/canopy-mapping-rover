@@ -5,6 +5,10 @@ from dataclasses import asdict, dataclass
 import numpy as np
 from numpy.typing import ArrayLike
 
+from canopy.config import section
+
+_DBH = section("dbh")
+
 
 @dataclass(frozen=True)
 class Stem:
@@ -19,13 +23,13 @@ class Stem:
 
 def detect_stems(
     points: ArrayLike,
-    slice_min: float = 1.2,
-    slice_max: float = 1.4,
-    radius: float = 0.8,
-    min_points: int = 20,
-    min_dbh: float = 0.05,
-    max_dbh: float = 0.60,
-    max_residual: float = 0.05,
+    slice_min: float = _DBH["slice_min_m"],
+    slice_max: float = _DBH["slice_max_m"],
+    radius: float = _DBH["cluster_radius_m"],
+    min_points: int = _DBH["min_points"],
+    min_dbh: float = 2 * _DBH["min_radius_m"],
+    max_dbh: float = 2 * _DBH["max_radius_m"],
+    max_residual: float = _DBH["max_fit_residual_m"],
 ) -> list[Stem]:
     """Cluster a breast-height slice and fit circles with least squares."""
     values = np.asarray(points, dtype=float)

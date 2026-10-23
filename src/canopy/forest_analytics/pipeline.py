@@ -33,8 +33,15 @@ def analyze_cloud(cloud_path: str | Path, config_path: str | Path, out_dir: str 
         config["voxel_size_m"],
     )
     np.save(destination / "density.npy", density.occupancy)
-    score, origin = ladder_fuel_index(normalized, config["ladder_fuel"]["grid_size_m"])
-    save_ladder_report(score, origin, config["ladder_fuel"]["grid_size_m"], destination)
+    ladder = config["ladder_fuel"]
+    score, origin = ladder_fuel_index(
+        normalized,
+        ladder["grid_size_m"],
+        ladder["occupancy_voxel_m"],
+        tuple(tuple(band) for band in ladder["bands_m"]),
+        tuple(ladder["band_weights"]),
+    )
+    save_ladder_report(score, origin, ladder["grid_size_m"], destination)
     stems = detect_stems(normalized, **_stem_config(config["dbh"]))
     _write_tree_table(stems_to_rows(stems), destination / "trees.csv")
     summary = {"n_points": len(points), "n_stems": len(stems)}
@@ -55,6 +62,7 @@ def _stem_config(config: dict) -> dict:
     return {
         "slice_min": config["slice_min_m"],
         "slice_max": config["slice_max_m"],
+        "radius": config["cluster_radius_m"],
         "min_points": config["min_points"],
         "min_dbh": config["min_radius_m"] * 2,
         "max_dbh": config["max_radius_m"] * 2,

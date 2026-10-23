@@ -20,6 +20,8 @@ aerial/satellite context layer remains in scope. The water module is paused.
 ## Rules
 
 - Use Python 3.10+ with type hints, short docstrings, and small functions.
+- Put every tunable number in `configs/default.yaml` and read it via `canopy.config`;
+  do not hard-code thresholds inside functions.
 - Explain LiDAR and SLAM code in plain language because the team is learning.
 - Never commit raw datasets; use `datasets/download_scripts/`.
 - Ignore generated `data/` and `results/` files except small summaries.

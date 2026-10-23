@@ -1,9 +1,17 @@
-# TODO: replace with real GitHub handle.
-# src/lidar_odometry/ @ANWITA_USERNAME
-# src/navigation/ @ANWITA_USERNAME
-src/forest_analytics/ @chikolavoski-sys
-src/aerial_context/ @chikolavoski-sys
+# Ownership follows docs/decisions.md (Prithvi: forest analytics, aerial
+# context, repository setup; Anwita: odometry and navigation; Prajwal:
+# simulation and evaluation).
+
+# Repository setup and anything not listed below.
+* @chikolavosaki-sys
+
+src/canopy/forest_analytics/ @chikolavosaki-sys
+src/canopy/aerial_context/ @chikolavosaki-sys
 
 # TODO: replace with real GitHub handle.
-# src/simulation/ @PRAJWAL_USERNAME
-# src/evaluation/ @PRAJWAL_USERNAME
+# src/canopy/lidar_odometry/ @ANWITA_USERNAME
+# src/canopy/navigation/ @ANWITA_USERNAME
+
+# TODO: replace with real GitHub handle.
+# src/canopy/simulation/ @PRAJWAL_USERNAME
+# src/canopy/evaluation/ @PRAJWAL_USERNAME

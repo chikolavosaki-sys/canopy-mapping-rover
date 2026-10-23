@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from canopy.config import load_config
 from canopy.io import voxel_downsample
 
 
@@ -17,7 +18,9 @@ def transform_points(points: np.ndarray, pose: np.ndarray) -> np.ndarray:
 
 
 def register_scans(
-    scans: Sequence[np.ndarray], poses: Sequence[np.ndarray], voxel_size: float = 0.1
+    scans: Sequence[np.ndarray],
+    poses: Sequence[np.ndarray],
+    voxel_size: float = load_config()["voxel_size_m"],
 ) -> np.ndarray:
     """Transform scans into the first world frame and return one downsampled map."""
     if len(scans) != len(poses):

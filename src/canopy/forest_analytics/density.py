@@ -5,6 +5,10 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from canopy.config import load_config
+
+_CONFIG = load_config()
+
 
 @dataclass(frozen=True)
 class DensityGrid:
@@ -19,8 +23,8 @@ class DensityGrid:
 def density_grid(
     points: ArrayLike,
     bands: tuple[tuple[float, float], ...],
-    resolution: float = 1.0,
-    voxel_size: float = 0.1,
+    resolution: float = _CONFIG["density"]["grid_size_m"],
+    voxel_size: float = _CONFIG["voxel_size_m"],
 ) -> DensityGrid:
     """Compute occupied vertical voxels per XY cell and band.
 

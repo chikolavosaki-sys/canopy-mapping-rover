@@ -28,7 +28,7 @@ PY
 Install the optional odometry dependencies in a virtual environment:
 
 ```bash
-python -m pip install -e ".[core,odometry,dev]"
+python -m pip install -e ".[core,csf,odometry,dev]"   # drop csf on Windows without C++ tools
 canopy-odometry \
   --bag data/raw/treescope/WSF-19/input/cloud3.bag \
   --topic /velodyne/cloud \

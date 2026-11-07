@@ -89,3 +89,23 @@ def test_density_counts_layers_not_returns() -> None:
     result = density_grid(points, ((1.0, 2.0),), resolution=1.0, layer=0.1)
 
     assert np.isclose(result.occupancy[0, 0, 0], 2 / 10)
+
+
+def test_reported_ground_method_is_the_one_that_runs(monkeypatch) -> None:
+    """Without the CSF package, "csf" resolves to the RANSAC fallback; bad names fail."""
+    import builtins
+
+    from canopy.forest_analytics.ground import resolve_method
+
+    real_import = builtins.__import__
+
+    def no_csf(name, *args, **kwargs):
+        if name == "CSF":
+            raise ImportError("CSF not installed")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_csf)
+    assert resolve_method("csf") == "ransac"
+    assert resolve_method("ransac") == "ransac"
+    with pytest.raises(ValueError, match="unknown"):
+        resolve_method("lasers")

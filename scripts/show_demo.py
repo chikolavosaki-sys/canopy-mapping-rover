@@ -45,8 +45,11 @@ def main() -> None:
     )
     truth, estimated, scans = _odometry(forest)
     if args.view == "3d":
-        _show_3d(forest, truth, estimated, scans)
-        return
+        try:
+            _show_3d(forest, truth, estimated, scans)
+            return
+        except Exception as exc:
+            print(f"Interactive 3D view unavailable ({exc}). Generating 2D PNG figures instead.")
     nav_forest = make_forest(args.nav_seed, 30.0, 40)
     start, goal = start_and_goal(nav_forest)
     drive = run_rover(nav_forest, start, goal, Controller())

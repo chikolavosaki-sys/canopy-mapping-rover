@@ -59,16 +59,27 @@ def normalize_heights(
     return model, normalized, is_ground
 
 
-def classify_ground(points: ArrayLike, method: str = _GROUND["method"]) -> NDArray[np.bool_]:
-    """True for ground points. ``method`` is "csf" or "ransac"; CSF falls back if missing."""
-    values = _points(points)
+def resolve_method(method: str = _GROUND["method"]) -> str:
+    """The ground method that will actually run.
+
+    "csf" needs the optional ``csf`` extra (``pip install -e ".[csf]"``); without
+    it the RANSAC fallback runs, and reports should say "ransac", not "csf".
+    """
+    if method not in ("csf", "ransac"):
+        raise ValueError(f"unknown ground method {method!r}")
     if method == "csf":
         try:
-            return _csf_ground(values)
+            import CSF  # noqa: F401
         except ImportError:
-            method = "ransac"
-    if method != "ransac":
-        raise ValueError(f"unknown ground method {method!r}")
+            return "ransac"
+    return method
+
+
+def classify_ground(points: ArrayLike, method: str = _GROUND["method"]) -> NDArray[np.bool_]:
+    """True for ground points, using ``resolve_method(method)`` (CSF or RANSAC)."""
+    values = _points(points)
+    if resolve_method(method) == "csf":
+        return _csf_ground(values)
     return _ransac_ground(values)
 
 

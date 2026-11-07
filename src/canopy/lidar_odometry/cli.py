@@ -39,8 +39,16 @@ def main() -> None:
     parser.add_argument("--topic", help="PointCloud2 topic (required with --bag)")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
-    if args.bag and not args.topic:
-        parser.error("--topic is required with --bag")
+    if args.bag:
+        if not args.topic:
+            parser.error("--topic is required with --bag")
+        if not args.bag.exists():
+            parser.error(
+                f"bag file '{args.bag}' not found. Note: raw dataset bags are git-ignored; "
+                "see docs/real-data.md and data/MANIFEST.csv to provide local files."
+            )
+    if args.frames and not args.frames.exists():
+        parser.error(f"frames folder '{args.frames}' not found.")
     stamps, frames, reference = _load_input(args)
     if not frames:
         parser.error("no point-cloud frames were found")

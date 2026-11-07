@@ -49,7 +49,7 @@ Seed 0.
 | DBH RMSE (m), scanned map | n/a | <= 0.03 |
 | DBH RMSE (m), exact-pose map | 0.0051 | <= 0.03 |
 | Ground precision (rocks excluded) / recall | 0.993 / 0.979 | - |
-| Ladder AUC vs shrub cells, scanned map | 0.8767 | >= 0.75 |
+| Ladder AUC vs shrub cells, scanned map | 0.8774 | >= 0.75 |
 | Navigation runs | 80 | >= 50 |
 | Navigation success rate | 0.9375 | >= 0.90 |
 | Navigation collisions | 4 | 0 |

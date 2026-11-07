@@ -26,8 +26,8 @@ first column is odometry error). Perfect cloud: every forest point (upper bound)
 | Tree precision | 0.0000 | 1.0000 | 1.0000 |
 | DBH RMSE (m) | n/a | 0.0051 | 0.0017 |
 | DBH bias (m) | n/a | -0.0042 | -0.0001 |
-| Ladder Spearman vs shrub cells | 0.3411 | 0.4373 | 0.2716 |
-| Ladder AUC vs shrub cells | 0.8767 | 0.9698 | 0.9777 |
+| Ladder Spearman vs shrub cells | 0.3417 | 0.4373 | 0.2716 |
+| Ladder AUC vs shrub cells | 0.8774 | 0.9698 | 0.9777 |
 
 Ground classification (csf) on the labelled demo scans: precision 0.993 (rocks excluded), recall 0.979.
 

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from canopy.config import load_config, section
+from canopy.config import load_config
 from canopy.evaluation.ladder_eval import evaluate_ladder
 from canopy.evaluation.nav_eval import evaluate_navigation, summarise
 from canopy.evaluation.odometry_eval import (
@@ -24,7 +24,7 @@ from canopy.evaluation.odometry_eval import (
     relative_to_first,
 )
 from canopy.evaluation.tree_eval import evaluate_trees
-from canopy.forest_analytics.ground import normalize_heights
+from canopy.forest_analytics.ground import normalize_heights, resolve_method
 from canopy.forest_analytics.ladder_fuel import save_ladder_report
 from canopy.forest_analytics.pipeline import analyse_points
 from canopy.forest_analytics.stems import stems_to_rows
@@ -37,7 +37,7 @@ OUTCOMES = Path(__file__).resolve().parents[1] / "docs" / "OUTCOMES.md"
 MARKERS = ("<!-- demo-results:start -->", "<!-- demo-results:end -->")
 
 
-def run_demo(seed: int, out_dir: Path) -> Summary:
+def run_demo(seed: int, out_dir: Path, fast: bool = False) -> Summary:
     """Run odometry, mapping, analytics, and navigation; write the report files."""
     config = load_config()
     demo = config["demo"]
@@ -53,8 +53,11 @@ def run_demo(seed: int, out_dir: Path) -> Summary:
         summary.update({f"{prefix}_{key}": value for key, value in metrics.items()})
     nav = config["navigation"]["eval"]
     first = nav["reported_seed_offset"] + seed
-    seeds = range(first, first + nav["seeds_per_density"])
-    overall = summarise(evaluate_navigation(seeds, out_dir=out_dir / "navigation"))[-1]
+    seeds = range(first, first + (2 if fast else nav["seeds_per_density"]))
+    tree_counts = (10, 40) if fast else tuple(nav["tree_counts"])
+    overall = summarise(
+        evaluate_navigation(seeds, tree_counts=tree_counts, out_dir=out_dir / "navigation")
+    )[-1]
     summary["navigation_runs"] = overall["runs"]
     summary["navigation_success"] = overall["success_rate"]
     summary["navigation_collisions"] = overall["collisions"]
@@ -192,7 +195,7 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
     ]
     lines += [
         "",
-        f"Ground classification ({section('ground')['method']}) on the labelled demo scans: "
+        f"Ground classification ({resolve_method()}) on the labelled demo scans: "
         f"precision {summary['ground_precision']:.3f} (rocks excluded), "
         f"recall {summary['ground_recall']:.3f}.",
         "",
@@ -251,10 +254,15 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=Path, default=Path("results/demo"))
     parser.add_argument(
+        "--fast", action="store_true", help="fast run for live demos (4 nav trials)"
+    )
+    parser.add_argument(
         "--update-outcomes", action="store_true", help="rewrite the table in docs/OUTCOMES.md"
     )
     args = parser.parse_args()
-    summary = run_demo(args.seed, args.out)
+    if args.fast and args.update_outcomes:
+        parser.error("--fast runs only 4 navigation trials; do not use it with --update-outcomes")
+    summary = run_demo(args.seed, args.out, fast=args.fast)
     if args.update_outcomes:
         update_outcomes(summary, args.seed)
 

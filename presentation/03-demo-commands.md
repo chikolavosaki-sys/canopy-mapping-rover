@@ -14,7 +14,7 @@ source .venv/bin/activate
 git clone https://github.com/chikolavosaki-sys/canopy-mapping-rover.git
 cd canopy-mapping-rover
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[core,odometry,eval,dev]"
+pip install -e ".[core,csf,odometry,eval,dev]"   # on Windows without C++ tools, drop csf
 sudo apt-get install -y libusb-1.0-0          # Open3D needs this on WSL
 pytest -q                                     # expect: all tests pass (about 2 min)
 ```

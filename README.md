@@ -29,7 +29,7 @@ The proposed ownership change is pending team confirmation. The water body modul
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[core,odometry,eval,dev]"   # add ,csf if C++ build tools are available
+pip install -e ".[core,csf,odometry,eval,dev]"   # drop csf if C++ build tools are missing (Windows)
 pytest -q && ruff check .
 python scripts/run_all.py --seed 0 --fast   # quick demo, ~15s (omit --fast for full 80-run benchmark)
 python scripts/show_demo.py                 # figures in results/demo/figures/

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from canopy.config import load_config, section
+from canopy.config import load_config
 from canopy.evaluation.ladder_eval import evaluate_ladder
 from canopy.evaluation.nav_eval import evaluate_navigation, summarise
 from canopy.evaluation.odometry_eval import (
@@ -24,7 +24,7 @@ from canopy.evaluation.odometry_eval import (
     relative_to_first,
 )
 from canopy.evaluation.tree_eval import evaluate_trees
-from canopy.forest_analytics.ground import normalize_heights
+from canopy.forest_analytics.ground import normalize_heights, resolve_method
 from canopy.forest_analytics.ladder_fuel import save_ladder_report
 from canopy.forest_analytics.pipeline import analyse_points
 from canopy.forest_analytics.stems import stems_to_rows
@@ -195,7 +195,7 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
     ]
     lines += [
         "",
-        f"Ground classification ({section('ground')['method']}) on the labelled demo scans: "
+        f"Ground classification ({resolve_method()}) on the labelled demo scans: "
         f"precision {summary['ground_precision']:.3f} (rocks excluded), "
         f"recall {summary['ground_recall']:.3f}.",
         "",
@@ -260,6 +260,8 @@ def main() -> None:
         "--update-outcomes", action="store_true", help="rewrite the table in docs/OUTCOMES.md"
     )
     args = parser.parse_args()
+    if args.fast and args.update_outcomes:
+        parser.error("--fast runs only 4 navigation trials; do not use it with --update-outcomes")
     summary = run_demo(args.seed, args.out, fast=args.fast)
     if args.update_outcomes:
         update_outcomes(summary, args.seed)

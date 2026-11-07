@@ -83,14 +83,14 @@ dbh:                           # canopy.forest_analytics.stems (approach after 3
   min_points: 15               # fewer points in a cluster -> not a stem
   ransac_iterations: 200
   ransac_inlier_m: 0.02        # circle inlier distance
-  min_inlier_fraction: 0.45
+  min_inlier_fraction: 0.6
   min_arc_deg: 90.0            # visible part of the circle; less gives unreliable DBH
   min_radius_m: 0.025
   max_radius_m: 0.40
-  max_fit_residual_m: 0.025
+  max_fit_residual_m: 0.02
   verticality_slices_m: [0.8, 2.0]   # also fit here to check the stem is upright
   verticality_half_height_m: 0.1
-  max_lean_deg: 20.0
+  max_lean_deg: 15.0
   max_radius_change: 0.35      # slice radii may differ from DBH radius by this fraction
   stem_removal_margin_m: 0.10  # points this close to a stem are removed before ladder fuel
 
@@ -159,7 +159,7 @@ navigation:
     start_search_step_m: 0.5   # shift start/goal sideways by this until clear
 
 evaluation:
-  tree_match_gate_m: 1.0
+  tree_match_gate_m: 0.5
 
 demo:
   plot_size_m: 20.0

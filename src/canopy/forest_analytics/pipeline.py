@@ -12,11 +12,10 @@ from pathlib import Path
 
 import numpy as np
 
-from canopy.config import section
 from canopy.io import load_points
 
 from .density import DensityGrid, density_grid
-from .ground import GroundModel, normalize_heights
+from .ground import GroundModel, normalize_heights, resolve_method
 from .ladder_fuel import LadderFuel, ladder_fuel, save_ladder_report
 from .stems import Stem, detect_stems, remove_stem_points, stems_to_rows
 
@@ -66,7 +65,7 @@ def _summary(points: np.ndarray, result: Analysis) -> dict:
     index = result.ladder.ladder_fuel_index
     return {
         "n_points": int(len(points)),
-        "ground_method": section("ground")["method"],
+        "ground_method": resolve_method(),
         "ground_fraction": float(result.is_ground.mean()),
         "n_stems": len(result.stems),
         "mean_dbh_m": float(dbh.mean()) if len(dbh) else None,

@@ -71,6 +71,10 @@ The numbers for slide 11 are in `results/ml/report.md`; slide 13 in
 
 ## D. Live demo (during the presentation, 1-2 minutes)
 
+Easiest: `bash presentation/live_demo.sh` runs these steps one by one (Enter for
+each) and prints what to say; see `05-presentation-day.md`. The commands below
+are the same steps, if you prefer typing them.
+
 Open the terminal **before** you start presenting, activate the environment,
 and run each command once beforehand so files are cached.
 

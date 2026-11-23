@@ -9,6 +9,8 @@ write the code. Read the files in this order:
 | [`02-slides-and-script.md`](02-slides-and-script.md) | Slide by slide: what to **show** and what to **say** |
 | [`03-demo-commands.md`](03-demo-commands.md) | Exact commands: preparing results, the live demo, and what to do if something fails |
 | [`04-questions-and-answers.md`](04-questions-and-answers.md) | Questions examiners are likely to ask, with honest answers |
+| [`05-presentation-day.md`](05-presentation-day.md) | **Presentation day checklist:** what to run, when, and what to say |
+| `live_demo.sh` | The live demo: press Enter for each step; it shows what to say |
 | `prepare.sh` | One command that regenerates all results and copies slide images into `images/` |
 | `make_slide_images.py` | Draws the real-forest pictures (used by `prepare.sh`) |
 | `images/` | All pictures for the slides (after running `prepare.sh`) |

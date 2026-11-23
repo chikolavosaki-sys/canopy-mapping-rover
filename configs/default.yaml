@@ -165,3 +165,21 @@ demo:
   plot_size_m: 20.0
   tree_count: 6
   points_per_tree: 4000        # dense enough that the perfect cloud is a fair upper bound
+
+ml:                            # canopy.ml: Random Forest point classifier
+  classes: [ground, stem, shrub, crown, rock]
+  neighbours: 20               # points used to describe each point's local shape
+  samples_per_class: 3000      # per forest, so rare classes (rocks) are not drowned out
+  train_seeds: [0, 1, 2, 3, 4, 5, 6, 7]
+  test_seeds: [100, 101, 102, 103]   # never seen in training
+  forest:                      # simulated forests used to build the dataset
+    plot_size_m: 20.0
+    tree_count: 8
+    points_per_tree: 4000
+  random_forest:
+    n_estimators: 100
+    max_depth: 20
+    min_samples_leaf: 5
+    seed: 0
+  real_eval_frames: 12         # VAT-0723 .h5 frames used for the real-data check
+

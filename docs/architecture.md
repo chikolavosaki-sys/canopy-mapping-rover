@@ -53,6 +53,14 @@ arc and verticality checks); stem points are removed; `density` and
 registered map keeps 2 cm voxels (`map_voxel_size_m`) because coarser maps
 leave too few trunk points for a circle fit.
 
+Machine learning (`canopy.ml`): every point gets 8 local-shape features
+(height above ground, linearity, planarity, scattering, verticality, main
+direction, height spread, neighbourhood size from its 20 nearest neighbours),
+and a Random Forest classifies it as ground, stem, shrub, crown or rock. It is
+trained on simulated forests (labels come free from the simulator) and tested
+on unseen forests and on real TreeScope VAT-0723 ground/trunk labels
+(`scripts/train_point_classifier.py`, results in `results/ml/`).
+
 Phase 3 wraps KISS-ICP's `KissICP` class (kiss-icp 1.3.0) frame by frame,
 exports TUM trajectories with exact nanosecond timestamps, and merges scans
 into one map with `register_scans`. Settings come from the `odometry` section

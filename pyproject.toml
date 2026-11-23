@@ -23,6 +23,9 @@ core = [
 csf = [
     "cloth-simulation-filter>=1.1.5",
 ]
+ml = [
+    "scikit-learn>=1.3",
+]
 odometry = [
     "kiss-icp>=1.2.3",
     "rosbags>=0.9.23",

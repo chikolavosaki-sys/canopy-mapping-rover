@@ -34,6 +34,7 @@ pytest -q && ruff check .
 python scripts/run_all.py --seed 0 --fast   # quick demo, ~15s (omit --fast for full 80-run benchmark)
 python scripts/show_demo.py                 # figures in results/demo/figures/
 python scripts/show_demo.py --view 3d       # rotate the scanned forest in a 3-D window
+pip install -e ".[ml]" && python scripts/train_point_classifier.py   # ML point classifier, ~2 min
 ```
 
 All tunable numbers live in `configs/default.yaml`. On WSL, Open3D also needs

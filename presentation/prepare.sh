@@ -20,6 +20,13 @@ else
   echo "   skipped: run the 'Real forest run' commands in presentation/03-demo-commands.md first"
 fi
 
+echo "ML: Random Forest point classifier (~2 min, needs: pip install -e \".[ml]\")"
+if python -c "import sklearn" 2>/dev/null; then
+  python scripts/train_point_classifier.py > /dev/null
+else
+  echo "   skipped: scikit-learn not installed"
+fi
+
 echo "4/4 Copying slide images into $IMAGES/"
 cp results/demo/figures/forest_map.png "$IMAGES/sim_forest_map.png"
 cp results/demo/figures/lidar_scan.png "$IMAGES/sim_lidar_scan.png"
@@ -28,5 +35,10 @@ cp results/demo/ladder_fuel.png "$IMAGES/sim_ladder_fuel.png"
 if [ -f results/real/wsf19/analysis/ladder_fuel.png ]; then
   cp results/real/wsf19/analysis/ladder_fuel.png "$IMAGES/real_ladder_fuel.png"
 fi
+for name in confusion_matrix feature_importance real_classified_side_view; do
+  if [ -f "results/ml/$name.png" ]; then
+    cp "results/ml/$name.png" "$IMAGES/ml_${name/real_classified_side_view/real_side_view}.png"
+  fi
+done
 ls -1 "$IMAGES"
 echo "Done. Numbers for the slides: results/demo/report.md and docs/real-data.md"

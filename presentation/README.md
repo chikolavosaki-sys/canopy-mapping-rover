@@ -28,9 +28,9 @@ write the code. Read the files in this order:
 
 | Presenter | Slides | Topic |
 |---|---|---|
-| Prithvi | 1-5, 9, 15-17 | Problem, idea, outputs, ladder fuel, limits, impact, close |
+| Prithvi | 1-5, 9, 11, 16-18 | Problem, idea, outputs, ladder fuel, ML, limits, impact, close |
 | Anwita | 6-8, 10 | How it works, mapping/odometry, trees, navigation |
-| Prajwal | 11-14 | Testing (simulator + real data), results, live demo |
+| Prajwal | 12-15 | Testing (simulator + real data), results, live demo |
 
 Change it as you like; each slide's script stands on its own.
 

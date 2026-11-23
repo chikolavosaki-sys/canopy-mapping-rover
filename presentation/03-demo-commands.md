@@ -58,12 +58,15 @@ pictures (if section B was done), and copies everything into
 | `sim_lidar_scan.png` | 5, 7 |
 | `sim_odometry.png` | 7 |
 | `real_side_view.png` | 8 |
-| `real_top_views.png` | 1, 9, 13 |
+| `real_top_views.png` | 1, 9, 14 |
 | `sim_forest_map.png` | 5, 10 |
-| `sim_ladder_fuel.png` | 12 |
-| `real_ladder_fuel.png` | 5, 13 |
+| `sim_ladder_fuel.png` | 13 |
+| `real_ladder_fuel.png` | 5, 14 |
+| `ml_confusion_matrix.png`, `ml_feature_importance.png` | 11 |
+| `ml_real_side_view.png` | 14 (optional) |
 
-The numbers for slide 12 are in `results/demo/report.md`; for slide 13 in
+The numbers for slide 11 are in `results/ml/report.md`; slide 13 in
+`results/demo/report.md`; slide 14 in
 `docs/real-data.md`. If you re-ran anything, re-check them against the slides.
 
 ## D. Live demo (during the presentation, 1-2 minutes)

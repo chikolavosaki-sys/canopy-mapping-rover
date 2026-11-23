@@ -132,7 +132,24 @@ LiDAR cannot see low rocks right next to it."
 
 ---
 
-## 11. How we tested it
+## 11. Machine learning: classifying every point
+
+**Show:** `images/ml_confusion_matrix.png` (big) and one line:
+"Random Forest, 8 features per point, trained on 8 simulated forests, tested on
+4 unseen forests: **89.2 % accuracy**". Small: `images/ml_feature_importance.png`.
+
+**Say:** "For the machine-learning part, a Random Forest model classifies every
+LiDAR point as ground, trunk, shrub, crown or rock. For each point we describe the
+shape of its 20 nearest neighbours: points on a line are probably a trunk, a flat
+sheet is ground, scattered points are leaves. Because we generate the forests, we
+get the correct label of every point for free, so we trained on 8 forests and
+tested on 4 forests the model had never seen: 89 % of points were classified
+correctly. Ground and rocks are almost perfect; the main confusion is shrub versus
+trunk, because both stand between 1 and 4 m."
+
+---
+
+## 12. How we tested it
 
 **Show:** Two boxes: "Simulator: virtual forests with known true answers (trees,
 DBH, shrubs, slopes up to 15 degrees)" and "Real data: TreeScope WSF-19 forest
@@ -144,7 +161,7 @@ the same pipeline on a real public forest recording from the TreeScope project."
 
 ---
 
-## 12. Results in simulation
+## 13. Results in simulation
 
 **Show:** This table (numbers from `results/demo/report.md`; re-check after `prepare.sh`):
 
@@ -164,7 +181,7 @@ half a centimetre. The ladder-fuel map picks out the shrub areas with an AUC of
 
 ---
 
-## 13. Results on a real forest
+## 14. Results on a real forest
 
 **Show:** `images/real_ladder_fuel.png` (big) and `images/real_top_views.png`.
 Numbers: 92 scans, 8.6 m drive, 2.7 million-point map, 40 x 46 m, 17 % of cells
@@ -175,9 +192,15 @@ built a 2.7-million-point map of a 40 by 46 m stand and produced this ladder-fue
 map, where 17 % of the squares score as high risk. The trunk sizes we measured
 match the dataset's labels: a median of 23.5 cm against 23.4 cm."
 
+Optional extra picture: `images/ml_real_side_view.png` (the real forest coloured by
+the ML model). Say: "On real labelled frames the ML model found 60 % of ground and
+35 % of trunk points correctly, much lower than in simulation, because it learned
+only from our clean simulated forest. Real ground is rougher and real trunks are
+much taller. Training on real labelled data is the fix."
+
 ---
 
-## 14. Live demo (optional, 1-2 minutes)
+## 15. Live demo (optional, 1-2 minutes)
 
 **Show:** Switch to the terminal; follow `03-demo-commands.md` ("Live demo").
 
@@ -187,10 +210,11 @@ paths."
 
 ---
 
-## 15. Limitations and future work
+## 16. Limitations and future work
 
 **Show:** Bullets:
 - Odometry drift (about 11 % in simulation) blurs trunks: only 5 of 63 real trees found
+- ML model trained on simulated forests: 89 % accurate there, but only 60 % (ground) / 35 % (trunk) on real labels
 - Simulated rover only; no physical hardware
 - Ladder fuel is a proxy, validated against shrub positions
 - One real dataset so far (DigiForests and Indian Shivalik data need access)
@@ -204,7 +228,7 @@ step. The rover is simulated, and the ladder score is a measurable proxy."
 
 ---
 
-## 16. Real-world impact
+## 17. Real-world impact
 
 **Show:** Who benefits: forest departments (where to clear fuel first, fire-risk
 zones), forest inventory (tree counts and sizes without tape surveys), research
@@ -217,7 +241,7 @@ first. The same scan also gives a tree inventory."
 
 ---
 
-## 17. Thank you / questions
+## 18. Thank you / questions
 
 **Show:** Team, guide, repository link
 (`github.com/chikolavosaki-sys/canopy-mapping-rover`), dataset credit: "TreeScope

@@ -1,8 +1,8 @@
 """Obstacle summaries for simulator navigation.
 
 Points are in the rover frame: +X forward, +Y left, z = height above the
-rover's base. Points below ``obstacle_min_height_m`` (ground) or above the
-rover are not obstacles.
+estimated ground. The detection threshold and the rover height define which
+returns count as obstacles.
 """
 
 import numpy as np
@@ -10,6 +10,7 @@ import numpy as np
 from canopy.config import section
 
 _NAV = section("navigation")
+DETECTION_HEIGHT = _NAV.get("obstacle_detection_min_height_m", _NAV["obstacle_min_height_m"])
 
 
 def nearest_obstacles(
@@ -17,7 +18,7 @@ def nearest_obstacles(
     sector_count: int = _NAV["sector_count"],
     forward_radius: float = _NAV["forward_radius_m"],
     rover_height: float = _NAV["rover_height_m"],
-    min_height: float = _NAV["obstacle_min_height_m"],
+    min_height: float = DETECTION_HEIGHT,
     fov_deg: float = _NAV["sector_fov_deg"],
 ) -> np.ndarray:
     """Return the nearest obstacle distance in each forward angular sector.
@@ -43,7 +44,7 @@ def corridor_clearance(
     half_width: float = _NAV["rover_radius_m"] + _NAV["corridor_margin_m"],
     forward_radius: float = _NAV["forward_radius_m"],
     rover_height: float = _NAV["rover_height_m"],
-    min_height: float = _NAV["obstacle_min_height_m"],
+    min_height: float = DETECTION_HEIGHT,
 ) -> float:
     """Return how far the rover can drive straight ahead before hitting something.
 
@@ -60,7 +61,7 @@ def footprint_clearance(
     points: np.ndarray,
     position: np.ndarray,
     rover_height: float = _NAV["rover_height_m"],
-    min_height: float = _NAV["obstacle_min_height_m"],
+    min_height: float = DETECTION_HEIGHT,
 ) -> float:
     """Return the distance from a rover-frame XY position to the nearest sensed obstacle.
 
@@ -79,7 +80,7 @@ def footprint_clearance(
 def _obstacles(
     points: np.ndarray, forward_radius: float, rover_height: float, min_height: float
 ) -> np.ndarray:
-    """Keep points in front of the rover, within range, between ground and rover height."""
+    """Keep points in front of the rover, within range and within the obstacle height band."""
     values = np.asarray(points, dtype=float)
     if values.ndim != 2 or values.shape[1] != 3:
         raise ValueError("points must have shape (N, 3)")

@@ -111,6 +111,12 @@ def make_forest(
     )
 
 
+def make_demo_forest(seed: int) -> Forest:
+    """Generate the shared plot used by the synthetic odometry and survey demos."""
+    demo = section("demo")
+    return make_forest(seed, demo["plot_size_m"], demo["tree_count"], demo["points_per_tree"])
+
+
 def traversal_poses(
     forest: Forest, length_m: float | None = None, step_m: float | None = None
 ) -> list[np.ndarray]:

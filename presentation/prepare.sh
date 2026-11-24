@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate every result and slide image, then collect the images here.
+# Regenerate mapping figures and collect the saved ML figures.
 # Run from anywhere:  bash presentation/prepare.sh      (about 4-6 minutes)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -20,12 +20,7 @@ else
   echo "   skipped: run the 'Real forest run' commands in presentation/03-demo-commands.md first"
 fi
 
-echo "ML: Random Forest point classifier (~2 min, needs: pip install -e \".[ml]\")"
-if python -c "import sklearn" 2>/dev/null; then
-  python scripts/train_point_classifier.py > /dev/null
-else
-  echo "   skipped: scikit-learn not installed"
-fi
+echo "ML: using the saved benchmark with the TreeScope check (results/ml)"
 
 echo "4/4 Copying slide images into $IMAGES/"
 cp results/demo/figures/forest_map.png "$IMAGES/sim_forest_map.png"

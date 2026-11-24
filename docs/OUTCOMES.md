@@ -31,28 +31,50 @@ proxy checked against shrub labels, not a fire-behaviour label.
 
 ## Demo results
 
-`python scripts/run_all.py --seed 0 --update-outcomes` regenerates the table
-between the markers below (full report: `results/demo/report.md`). It needs no
-downloads and takes about 2 minutes. Values are synthetic results, not claims
-about real forests.
+`python scripts/run_all.py --seed 0 --out results/semester-benchmark --update-outcomes`
+regenerates the table and saves the survey map, measurements, and navigation
+results. The run uses synthetic scans and requires no datasets.
+
+### Mapping comparison
+
+On seed 0, ground filtering reduced final drift from 10.77% to 0.85% and
+increased tree recall from 0 of 6 to 6 of 6. The scanned map estimated
+trunk diameter with 1.81 cm RMSE. On five additional forests (seeds 20–24),
+mean final drift fell from 10.43% to 1.58% and mean tree recall rose from 0%
+to 83%. Four of the five met the drift target and three met the recall target.
+These runs used the RANSAC ground classifier. The original all-returns run
+is available in [the original demo results](../results/demo/report.md).
+
+### Seed 0 mapping and held-out navigation benchmark
+
+The updated navigation configuration reached the goal in 80 of 80 runs when
+we replayed seeds 2000–2019 across four densities. Those scenarios helped
+diagnose failures. The table below reports the independent run on seeds
+3000–3019 with the configuration fixed before testing.
+
+The held-out run reached 79 of 80 goals (98.75%). The collision occurred on
+seed 3014 with 40 trees, so the zero-collision target is still open. All
+other runs reached the goal and there were no timeouts.
 
 <!-- demo-results:start -->
-Seed 0.
+Seed 0. Ground classification used RANSAC.
+Navigation seeds 3000-3019.
 
 | Metric | Value | Target |
 |---|---:|---:|
-| Odometry final drift (% of path) | 10.7746 | < 2 % |
-| Odometry ATE RMSE (m) | 0.7880 | - |
-| Tree recall, scanned map | 0.0000 | >= 0.90 |
+| Odometry final drift (% of path) | 0.8473 | < 2 % |
+| Odometry ATE RMSE (m) | 0.0502 | - |
+| Tree recall, scanned map | 1.0000 | >= 0.90 |
 | Tree recall, exact-pose map (no odometry error) | 1.0000 | - |
 | Tree recall, perfect cloud (upper bound) | 1.0000 | - |
-| DBH RMSE (m), scanned map | n/a | <= 0.03 |
-| DBH RMSE (m), exact-pose map | 0.0051 | <= 0.03 |
-| Ground precision (rocks excluded) / recall | 0.993 / 0.979 | - |
-| Ladder AUC vs shrub cells, scanned map | 0.8774 | >= 0.75 |
+| DBH RMSE (m), scanned map | 0.0181 | <= 0.03 |
+| DBH RMSE (m), exact-pose map | 0.0047 | <= 0.03 |
+| Ground precision (rocks excluded) / recall | 0.994 / 0.995 | - |
+| Ladder AUC vs shrub cells, scanned map | 0.9658 | >= 0.75 |
 | Navigation runs | 80 | >= 50 |
-| Navigation success rate | 0.9375 | >= 0.90 |
-| Navigation collisions | 4 | 0 |
+| Navigation success rate | 0.9875 | >= 0.90 |
+| Navigation collisions | 1 | 0 |
+| Navigation timeouts | 0 | - |
 <!-- demo-results:end -->
 
 ## Honest limits
@@ -63,23 +85,19 @@ Seed 0.
 - The simulated LiDAR ray-casts against simple meshes (cylinder trunks,
   sphere rocks, crowns and shrubs as clusters of small spheres). Real bark,
   foliage, and returns from partly hit objects are messier.
-- Odometry suffers from ground degeneracy: smooth-ish ground looks the same
-  wherever the rover is, so KISS-ICP under-estimates motion. In the sparse demo
-  forest (6 trees in 20 x 20 m) drift is about 12 %; removing ground points
-  would cut ATE from 0.74 m to 0.04 m on a 6 m test drive, but KISS-ICP is
-  used unmodified. Real data may behave differently.
-- Tree recall on the KISS-ICP map is limited by that drift: with exact poses
-  the same scans reach the perfect-cloud recall (see the exact-pose column).
-- Navigation seeds 0-19 were used for tuning and 1000-1019 for diagnosing the
-  blind zone; reported runs use fresh seeds (2000+). Remaining collisions are
-  mostly small rocks only a few cm taller than the rover's 0.3 m ground
-  clearance, which the per-scan ground plane and sensor noise can hide.
+- Smooth ground supplies many similar returns, which can obscure motion
+  during scan alignment. The ground filter helps in the simulator, and
+  sparse or weakly structured scans can still yield unreliable alignment.
+  The ground-filtered method needs separate testing on recorded data.
+- Small boulders may be hidden by terrain or fall below useful LiDAR
+  coverage in some poses. The navigation results apply to the
+  [wider simulated navigation sensor](decisions.md) and the sampled forests.
 - CSF's cloth drapes over low boulders, so rock points are often classed as
   ground (ground precision is reported with rocks excluded).
 - Simulated foliage is flat triangles and trunks are perfect cylinders; real
   bark, branches and leaves will make stem fitting harder than here.
-- With KISS-ICP's drift in the demo forest, no detected tree lands within the
-  0.5 m matching gate; with exact poses recall is 1.0 and DBH RMSE 0.5 cm.
-  Better odometry, not better analytics, is the next bottleneck.
+- Tree recall depends on scan coverage, alignment, and a 0.5 m matching
+  gate. The exact-pose map provides a reference for how well the same
+  scans can support the measurements.
 - The rover stays level on slopes (no pitch or roll), and its pose for
   obstacle memory is exact; a real rover would use its own odometry.

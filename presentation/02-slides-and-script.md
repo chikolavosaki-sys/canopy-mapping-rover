@@ -1,9 +1,9 @@
 # Slides and script
 
 For each slide: **Show** = what goes on the slide; **Say** = what to tell the
-audience (about 30-60 seconds per slide). Pictures are in `presentation/images/`
-after running `bash presentation/prepare.sh`. Keep text on slides short; the
-detail is in what you say.
+audience (about 30-60 seconds per slide). Generate the current simulator
+figures with [the demo commands](03-demo-commands.md). The saved TreeScope
+figures are in `presentation/images/`.
 
 ---
 
@@ -58,19 +58,19 @@ points of trunks, shrubs and ground: exactly the hidden layer."
 ## 5. What our system delivers
 
 **Show:** Three boxes: (1) ladder-fuel risk map, (2) tree count + trunk diameter
-(DBH), (3) safe autonomous driving. Small thumbnails: `images/real_ladder_fuel.png`,
-`images/sim_lidar_scan.png`, `images/sim_forest_map.png`.
+(DBH), (3) simulated obstacle avoidance. Show the saved TreeScope heatmap and
+the current simulator figures from `results/semester-demo/figures/`.
 
 **Say:** "From the scans we produce three things: a risk map of ladder fuel in 1 m
 squares, a list of trees with their trunk thickness for forest inventory, and a
-rover that can drive itself through the forest without hitting trees or rocks."
+simulator where we test whether the rover can navigate around trees and rocks."
 
 ---
 
 ## 6. How it works: the pipeline
 
 **Show:** The diagram (copy from `docs/architecture.md`, simplified):
-`LiDAR scans -> odometry (KISS-ICP) -> 3-D map -> ground (CSF) -> trees & DBH -> ladder-fuel map`,
+`LiDAR scans -> odometry (KISS-ICP) -> 3-D map -> ground (CSF or RANSAC) -> trees & DBH -> ladder-fuel map`,
 and a side branch `LiDAR -> obstacle sectors -> FORWARD / TURN / STOP`.
 
 **Say:** "Each scan goes through the same steps: figure out where the rover is,
@@ -81,14 +81,15 @@ ladder-fuel score. In parallel, the rover uses each scan to decide how to drive.
 
 ## 7. Step 1: knowing where we are and building the map
 
-**Show:** `images/sim_lidar_scan.png` (one scan from above and from the side) and
-`images/sim_odometry.png` (true path vs estimated path).
+**Show** the current `lidar_scan.png` and `odometry.png` from
+`results/semester-demo/figures/`.
 
 **Say:** "There is no GPS under a forest canopy, so the rover works out its own
 movement by lining each new scan up with the previous ones; this is called
-odometry, and we use the open-source KISS-ICP. All scans are then joined into one
-map. The right picture shows the true path in blue and our estimate in orange;
-the gap is drift, which we come back to in the limitations."
+odometry, and we use the open-source KISS-ICP. During simulated alignment, we
+downweight the effect of the ground by selecting returns above an estimated
+ground plane. We keep the complete scans when building the map. Blue shows
+the simulator route, and orange shows the estimate."
 
 ---
 
@@ -97,8 +98,8 @@ the gap is drift, which we come back to in the limitations."
 **Show:** `images/real_side_view.png` (ground at 0 m, trunks as columns) and one
 line: "DBH = trunk diameter at 1.3 m".
 
-**Say:** "First we separate the ground with the Cloth Simulation Filter, which
-works even on 15-degree slopes, and measure every point's height above the soil.
+**Say:** "First we separate the ground using the Cloth Simulation Filter or
+the RANSAC fallback, then measure every point's height above the soil.
 Then we take a thin slice at 1.3 m, chest height, find round clusters, and fit a
 circle to each: its diameter is the DBH. We also check the trunk is upright at
 0.8 m and 2 m so shrubs are not mistaken for trees."
@@ -121,8 +122,8 @@ the fuel the rover sees and a drone would not."
 
 ## 10. Step 4: driving safely
 
-**Show:** `images/sim_forest_map.png` (rover path weaving round trunks on a 13-degree
-slope). Four states: FORWARD, TURN LEFT, TURN RIGHT, STOP.
+**Show** the current `results/semester-demo/figures/forest_map.png` and the
+four states FORWARD, TURN LEFT, TURN RIGHT, and STOP.
 
 **Say:** "The rover splits the space ahead into 9 directions and checks a corridor
 as wide as itself. If something is in the way it turns immediately, keeps turning
@@ -143,7 +144,7 @@ LiDAR point as ground, trunk, shrub, crown or rock. For each point we describe t
 shape of its 20 nearest neighbours: points on a line are probably a trunk, a flat
 sheet is ground, scattered points are leaves. Because we generate the forests, we
 get the correct label of every point for free, so we trained on 8 forests and
-tested on 4 forests the model had never seen: 89 % of points were classified
+tested on 4 forests the model had never seen: 89.2% of points were classified
 correctly. Ground and rocks are almost perfect; the main confusion is shrub versus
 trunk, because both stand between 1 and 4 m."
 
@@ -163,21 +164,22 @@ the same pipeline on a real public forest recording from the TreeScope project."
 
 ## 13. Results in simulation
 
-**Show:** This table (numbers from `results/demo/report.md`; re-check after `prepare.sh`):
+**Show** these results from [the seed 0 benchmark](../docs/OUTCOMES.md).
 
 | Task | Result |
 |---|---|
-| Ground detection | 99.3 % precision, 97.9 % recall |
-| Trees found (accurate positions) | 6 / 6, DBH error 0.5 cm |
-| Trees on 12 new forests | 93 % found, 96 % correct, 0.4 cm DBH error |
-| Ladder-fuel map vs true shrubs | AUC 0.97 (1.0 = perfect) |
-| Navigation, 80 runs, 10-80 trees | 94 % reached goal |
+| Final odometry drift | 0.85% over a 10.67 m route |
+| Trees matched on the LiDAR-estimated map | 6 of 6, DBH RMSE 1.81 cm |
+| Ladder-fuel score vs simulated shrub locations | AUC about 0.97 |
+| Navigation on held-out seeds 3000–3019 | 79 of 80 reached the goal (98.75%), one collision, zero timeouts |
 
-and `images/sim_ladder_fuel.png`.
+Use `results/semester-demo/survey_map.png` alongside the table.
 
-**Say:** "With accurate positions, we find every tree and measure trunks to about
-half a centimetre. The ladder-fuel map picks out the shrub areas with an AUC of
-0.97. The rover reached its goal in 75 of 80 runs in forests of 10 to 80 trees."
+**Say** "On the demo forest, the LiDAR-estimated route ended about nine
+centimetres from the simulator's endpoint. The map matched all six trees,
+with a trunk-diameter error of about 1.8 centimetres. In 80 new navigation
+scenarios, the rover reached its goal 79 times, with one collision and
+zero timeouts."
 
 ---
 
@@ -185,12 +187,13 @@ half a centimetre. The ladder-fuel map picks out the shrub areas with an AUC of
 
 **Show:** `images/real_ladder_fuel.png` (big) and `images/real_top_views.png`.
 Numbers: 92 scans, 8.6 m drive, 2.7 million-point map, 40 x 46 m, 17 % of cells
-high-risk, DBH median 23.5 cm (ours) vs 23.4 cm (labels).
+above a score of 0.5, DBH median 23.5 cm (ours) vs 23.4 cm (labels).
 
 **Say:** "On the real TreeScope recording, the full pipeline ran end to end: it
 built a 2.7-million-point map of a 40 by 46 m stand and produced this ladder-fuel
-map, where 17 % of the squares score as high risk. The trunk sizes we measured
-match the dataset's labels: a median of 23.5 cm against 23.4 cm."
+map, where about 17% of the cells scored above 0.5. Our five detected stems
+had a median diameter of 23.5 cm. The median across the dataset labels was
+23.4 cm. These are separate groups of trees."
 
 Optional extra picture: `images/ml_real_side_view.png` (the real forest coloured by
 the ML model). Say: "On real labelled frames the ML model found 60 % of ground and
@@ -202,29 +205,34 @@ much taller. Training on real labelled data is the fix."
 
 ## 15. Live demo (optional, 1-2 minutes)
 
-**Show:** Switch to the terminal; follow `03-demo-commands.md` ("Live demo").
+**Show** the saved survey map and, if there is time, rerun the quick
+simulation from [the live walkthrough](03-demo-commands.md).
 
-**Say:** "Here is the simulated forest in 3-D. Each dot is a laser hit: blue
-trunks, orange shrubs, green rocks. The two lines are the true and estimated
-paths."
+**Say** "The solid line shows the simulator's route. The dashed line shows
+where the LiDAR estimate places the rover, and the blue crosses mark the
+detected trees. The heatmap shows the ladder-fuel score."
 
 ---
 
 ## 16. Limitations and future work
 
 **Show:** Bullets:
-- Odometry drift (about 11 % in simulation) blurs trunks: only 5 of 63 real trees found
-- ML model trained on simulated forests: 89 % accurate there, but only 60 % (ground) / 35 % (trunk) on real labels
+- Ground-filtered odometry was tested in simulation; tree matching averaged
+  83% across five additional simulated forests
+- The earlier TreeScope run detected five stems; the dataset lists 63
+  labelled trees and tree-by-tree matching is pending
+- ML model trained on simulated forests: 89.2% accurate on unseen synthetic
+  forests, but lower on real labels (sim-to-real gap)
 - Simulated rover only; no physical hardware
 - Ladder fuel is a proxy, validated against shrub positions
 - One real dataset so far (DigiForests and Indian Shivalik data need access)
 - Future: better odometry (LiDAR + IMU), more datasets, a real rover
 
-**Say:** "We want to be honest about the limits. The biggest one is drift: small
-position errors add up and blur trunks in the map, so on real data we found only 5
-of the 63 labelled trees. When the positions are accurate, everything else works
-well, so improving odometry, for example by also using the IMU, is the clear next
-step. The rover is simulated, and the ladder score is a measurable proxy."
+**Say** "The ground filter helped on simulated scans. In a real forest, low
+logs and other near-ground features might be important for aligning a scan.
+Our earlier TreeScope run detected five stems in the processed map. We
+still need to align that map with the labelled tree survey to measure
+real-world tree recall."
 
 ---
 

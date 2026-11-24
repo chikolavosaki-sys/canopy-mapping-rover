@@ -54,7 +54,7 @@ def analyze_cloud(cloud_path: str | Path, out_dir: str | Path) -> dict:
     np.save(destination / "dtm.npy", result.ground.elevations)
     _write_density(result.density, destination / "density.csv")
     save_ladder_report(result.ladder, destination)
-    _write_tree_table(stems_to_rows(result.stems), destination / "trees.csv")
+    write_tree_table(stems_to_rows(result.stems), destination / "trees.csv")
     summary = _summary(points, result)
     (destination / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     return summary
@@ -88,7 +88,7 @@ def _write_density(density: DensityGrid, path: Path) -> None:
                              *(f"{value:.4f}" for value in density.occupancy[i, j])])
 
 
-def _write_tree_table(rows: list[dict[str, float | int]], path: Path) -> None:
+def write_tree_table(rows: list[dict[str, float | int]], path: Path) -> None:
     """Write detected trees in a simple tabular format."""
     with path.open("w", newline="", encoding="utf-8") as output:
         writer = csv.DictWriter(output, fieldnames=TREE_FIELDS)

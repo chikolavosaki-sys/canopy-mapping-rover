@@ -91,7 +91,7 @@ def test_forward_steering_only_towards_a_clear_goal_direction() -> None:
 
 
 def test_memory_keeps_an_obstacle_that_left_the_field_of_view() -> None:
-    """A rock seen 2 m ahead is still reported after the rover drives up to it."""
+    """A remembered rock keeps its ground-relative height as the rover climbs."""
     from canopy.navigation.memory import ObstacleMemory
 
     memory = ObstacleMemory(scans=4)
@@ -99,10 +99,12 @@ def test_memory_keeps_an_obstacle_that_left_the_field_of_view() -> None:
     memory.update(np.array([[2.0, 0.0, 0.5]]), start)
     moved = np.eye(4)
     moved[0, 3] = 1.5  # drove 1.5 m forward; the new scan sees nothing
+    moved[2, 3] = 1.5 * np.tan(np.deg2rad(15.0))
 
     remembered = memory.update(np.empty((0, 3)), moved)
 
     np.testing.assert_allclose(remembered, [[0.5, 0.0, 0.5]])
+    assert corridor_clearance(remembered) == 0.5
 
 
 def test_heights_above_ground_follow_a_slope() -> None:

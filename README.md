@@ -29,20 +29,64 @@ The proposed ownership change is pending team confirmation. The water body modul
 
 ## Quick start
 
-New here? Follow **[docs/SETUP.md](docs/SETUP.md)** step by step. Short version:
+New here? Follow **[docs/SETUP.md](docs/SETUP.md)** step by step.
+
+The demo uses a simulated forest, so you can run it without downloading a dataset.
+On Windows, run these commands from PowerShell in the project folder.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[core,csf,odometry,eval,ml,dev]"
+```
+
+If CSF fails to build on Windows, install the other extras and use the built-in
+RANSAC ground classifier.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[core,odometry,eval,ml,dev]"
+```
+
+Once the dependencies are installed, run the demo and tests.
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/semester-demo
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Open `results/semester-demo/survey_map.png` to see the rover path, detected
+trees and ladder-fuel proxy on one map. The same folder has `trees.csv` for
+trunk measurements, `summary.json` for metrics and `report.md` for the
+run summary. You can pass the registered point cloud in `map.npy` to
+`canopy-analyze` to rerun forest analytics on it. Use a different `--out`
+folder for each run you want to keep.
+
+On macOS or Linux, use the following commands.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[core,csf,odometry,eval,dev]"   # drop csf if C++ build tools are missing (Windows)
+python -m pip install -e ".[core,csf,odometry,eval,ml,dev]"
 pytest -q && ruff check .
-python scripts/run_all.py --seed 0 --fast   # quick demo, ~15s (omit --fast for full 80-run benchmark)
+python scripts/run_all.py --seed 0 --fast --out results/semester-demo
 python scripts/show_demo.py                 # figures in results/demo/figures/
 python scripts/show_demo.py --view 3d       # rotate the scanned forest in a 3-D window
-pip install -e ".[ml]" && python scripts/train_point_classifier.py   # ML point classifier, ~2 min
+python scripts/train_point_classifier.py --out results/ml-rehearsal
 ```
 
-All tunable numbers live in `configs/default.yaml`. On WSL, Open3D also needs
-`sudo apt-get install -y libusb-1.0-0`.
+The demo estimates motion with ground-filtered LiDAR returns by default.
+Use `--odometry all-returns` and a separate output folder to reproduce the
+original alignment method. The report records which method ran. Omit
+`--fast` to run the full 80-trial navigation benchmark.
+
+`canopy-odometry --synthetic 0 --out results/odom-synthetic` runs just
+odometry on the same demo forest. Its summary includes final drift and the
+alignment mode. Recorded bags and NPY scans use all valid returns.
+
+For the live demo, follow the [presentation walkthrough](presentation/03-demo-commands.md).
+It uses the generated PNGs and the saved TreeScope figures.
+
+All tunable numbers live in `configs/default.yaml`. The project uses RANSAC
+for ground classification when the optional `csf` extra is absent. On WSL,
+Open3D also needs `sudo apt-get install -y libusb-1.0-0`.
 
 ## How we work
 

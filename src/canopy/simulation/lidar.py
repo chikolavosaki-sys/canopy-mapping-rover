@@ -11,6 +11,7 @@ label of what it hit.
 """
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 
@@ -21,6 +22,7 @@ from .synthetic_forest import Forest, PointCloud
 _SENSOR = section("sensor")
 _SIM = section("simulation")
 _MESH = _SIM["mesh"]
+OdometryMode = Literal["ground-filtered", "all-returns"]
 
 
 @dataclass(frozen=True)
@@ -79,6 +81,25 @@ def simulate_traversal(
         scan = simulate_scan(forest, pose, sensor, seed=index)
         sequence.append((pose, to_sensor_frame(scan, pose) if sensor_frame else scan))
     return sequence
+
+
+def mapping_frames(
+    scans: list[PointCloud], mode: OdometryMode
+) -> tuple[list[PointCloud], OdometryMode]:
+    """Select alignment returns for the level simulated sensor using scan geometry."""
+    from canopy.navigation.terrain import heights_above_ground
+
+    if mode == "all-returns":
+        return scans, mode
+    if mode != "ground-filtered":
+        raise ValueError(f"unknown odometry mode: {mode}")
+    demo = section("demo")
+    margin = demo.get("odometry_ground_margin_m", 0.10)
+    minimum = demo.get("odometry_min_returns", 100)
+    kept = [scan[heights_above_ground(scan)[:, 2] > margin] for scan in scans]
+    if any(len(frame) < minimum for frame in kept):
+        return scans, "all-returns"
+    return kept, mode
 
 
 def to_sensor_frame(points: PointCloud, pose: np.ndarray) -> PointCloud:

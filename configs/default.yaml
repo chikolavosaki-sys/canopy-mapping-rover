@@ -125,10 +125,14 @@ odometry:                    # passed to KISS-ICP's own KISSConfig
   test_ate_max_m: 0.5        # loose ATE bound for the synthetic-traversal test
 
 navigation:
+  lidar:
+    beam_count: 26             # maintain about 2 deg spacing over the wider field
+    vertical_fov_deg: 50.0     # include nearby low obstacles on sloped ground
   sector_count: 9
   sector_fov_deg: 180.0        # sectors span this field of view in front of the rover
   forward_radius_m: 8.0
   obstacle_min_height_m: 0.30  # rover ground clearance: anything lower passes under the chassis
+  obstacle_detection_min_height_m: 0.26  # margin for terrain estimation and LiDAR noise
   rover_height_m: 2.0
   rover_radius_m: 0.35
   sensor_height_m: 0.6
@@ -142,6 +146,7 @@ navigation:
   stop_distance_fraction: 0.5  # STOP when every sector is closer than this x safety distance
   goal_heading_weight: 0.25    # side bonus (x forward radius) for turning towards the goal
   goal_tolerance_m: 0.35
+  goal_align_distance_m: 1.0  # turn in place when close to the goal and facing away
   memory_scans: 8              # remember obstacles from the last 8 scans (covers the blind zone)
   terrain:                     # rover's own ground estimate from each scan
     cell_size_m: 1.0           # lowest point per cell = ground candidate
@@ -151,9 +156,9 @@ navigation:
     plot_size_m: 30.0
     tree_counts: [10, 20, 40, 80]  # forest densities: about 110-890 trees per hectare
     seeds_per_density: 20      # 4 x 20 = 80 runs (target: >= 50)
-    # Seeds 0-19 were used to tune the controller and 1000-1019 to diagnose the blind
-    # zone, so reported runs start here, on seeds nobody has looked at.
-    reported_seed_offset: 2000
+    # Use 3000-3019 for the held-out benchmark. Earlier seeds, including 2000-2019,
+    # were used for navigation development or regression checks.
+    reported_seed_offset: 3000
     start_goal_margin_m: 1.0   # start/goal sit this far inside the plot edges
     start_clearance_m: 1.0     # start/goal must be this far from any trunk or rock
     start_search_step_m: 0.5   # shift start/goal sideways by this until clear
@@ -165,6 +170,8 @@ demo:
   plot_size_m: 20.0
   tree_count: 6
   points_per_tree: 4000        # dense enough that the perfect cloud is a fair upper bound
+  odometry_ground_margin_m: 0.10  # ignore near-ground returns while aligning scans
+  odometry_min_returns: 100      # use all returns if filtering leaves too few in any scan
 
 ml:                            # canopy.ml: Random Forest point classifier
   classes: [ground, stem, shrub, crown, rock]

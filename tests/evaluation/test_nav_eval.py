@@ -11,7 +11,9 @@ from canopy.simulation.synthetic_forest import make_forest
 
 def test_navigation_runs_every_seed_and_density_and_writes_csvs(tmp_path) -> None:
     """2 seeds x 2 densities give 4 runs, a per-run CSV, and a summary with an overall row."""
-    runs = evaluate_navigation(range(2), tree_counts=(5, 10), plot_size_m=20.0, out_dir=tmp_path)
+    runs = evaluate_navigation(
+        iter(range(2)), tree_counts=(5, 10), plot_size_m=20.0, out_dir=tmp_path
+    )
 
     assert [(run.tree_count, run.seed) for run in runs] == [(5, 0), (5, 1), (10, 0), (10, 1)]
     with (tmp_path / "navigation.csv").open() as handle:
@@ -30,6 +32,12 @@ def test_start_and_goal_are_never_inside_an_obstacle() -> None:
     assert not collides(start[:2, 3], forest, 1.0)
     assert not collides(goal, forest, 1.0)
     assert start[1, 3] == goal[1]
+
+
+def test_navigation_detects_a_low_boulder_downslope() -> None:
+    """The wider navigation scan sees the boulder close to the starting path."""
+    run = evaluate_navigation([2002], tree_counts=(10,))[0]
+    assert run.result.reached_goal and not run.result.collision
 
 
 def test_summary_counts_outcomes() -> None:

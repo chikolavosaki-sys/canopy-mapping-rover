@@ -76,27 +76,39 @@ into triangle meshes and ray-casts a VLP-16-like scan with Open3D's
 `RaycastingScene` (true occlusion, range noise, a label per point).
 
 Phase 4 adds simulator-only navigation. Each step the rover scans from a
-LiDAR 0.6 m above its base, estimates its own ground plane from the scan
-(`navigation.terrain`, RANSAC), and remembers obstacle points from the last
+LiDAR 0.6 m above its base. Navigation uses 26 beams over 50 degrees to observe
+nearby low obstacles on slopes. The mapping sensor uses 16 beams over 30 degrees.
+Both profiles retain about two degrees of vertical spacing. See the
+[sensor design decision](decisions.md) for the motivation. Each navigation
+scan estimates a ground plane (`navigation.terrain`, RANSAC) and remembers obstacle points from the last
 8 scans (`navigation.memory`) to cover the LiDAR's close-range blind zone; `navigation.sectors` turns the rover-frame points
 into 9 forward sector distances, a rover-wide corridor clearance, and a
 footprint clearance. `navigation.controller` is a FORWARD / TURN_LEFT /
 TURN_RIGHT / STOP state machine: it turns in place as soon as the corridor is
 blocked, commits to one turn side, and resumes only when clear by an extra
 margin (hysteresis). FORWARD steers towards the goal only when that direction
-and the next footprint are clear. Collisions use trunk cylinders and rock
+and the next footprint are clear. For a nearby goal, the rover checks the
+corridor up to the target and can turn in place before completing the approach.
+The detection threshold includes a margin for terrain estimation and range
+noise. Collisions use trunk cylinders and rock
 cross-sections at the rover's ground clearance. `evaluation.nav_eval` runs
 seeds x forest densities and writes per-run and per-density CSVs. These are
 simulator results, not real-rover safety claims.
 
 Phase 5 connects everything in `scripts/run_all.py`: a simulated drive is
-tracked with KISS-ICP, the scans are registered into one map, the map is
-placed in world coordinates with the known start pose, and forest analytics
-run on it. The same analytics also run on the perfect simulated cloud as an
-upper bound, so the report shows what scanning and odometry cost. Outputs go
-to `results/<run>/` (report, summary JSON, tree list, navigation CSV,
-ladder-fuel heatmap); `--update-outcomes` refreshes the table in
-`docs/OUTCOMES.md`.
+tracked with KISS-ICP. The demo estimates ground height from each scan and
+keeps returns above the configured margin for alignment. It uses all returns
+if any scan has too few remaining points. Map registration uses the complete
+scans and places them in world coordinates with the known start pose. The
+standalone `canopy-odometry --synthetic` command shares the demo forest,
+alignment modes, and drift metric. Bag and NPY modes align with all valid
+returns. The ground filter has been evaluated in simulation. Low logs and
+other near-ground features may help align recorded scans.
+
+The analytics also run on the exact-pose map and the perfect simulated cloud to
+measure the effects of scan coverage and pose error. The run writes a
+registered point cloud, a survey map with paths and detections, a ladder-fuel
+heatmap, a tree table, navigation CSVs and a run summary to `results/<run>/`.
 
 Phase 6 adds instruction-only dataset layout validators, common TUM/tree-table
 adapters, and KISS-ICP bag CLI wiring through `rosbags`. Dataset scripts never

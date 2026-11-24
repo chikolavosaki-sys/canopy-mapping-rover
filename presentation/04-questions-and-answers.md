@@ -31,14 +31,24 @@ Odometry: it lines up each new scan with the previous ones (KISS-ICP, an
 open-source ICP method) to estimate how it moved. Under a canopy, GPS is weak.
 
 **Q: What is drift?**
-Each small movement estimate has a small error; they add up. Over 10.7 m in our
-simulated demo the estimate ended about 1.15 m off (10.8 %, from
-`results/demo/report.md`).
+Small movement errors add up. On the 10.67 m seed 0 route, the ground-filtered
+estimate ended about 9 cm away from the simulator endpoint (0.85% drift).
+The all-returns baseline ended about 1.15 m away (10.77%).
+
+**Q: Why filter the ground for odometry? Can you use this on real data?**
+Smooth ground looks similar from one scan to the next. In the simulated
+demo, keeping returns more than 10 cm above each scan's estimated ground
+surface helped KISS-ICP align the scans. The run falls back to all returns
+if any filtered scan has fewer than 100 points. We keep every valid scan
+return for building the map. Recorded inputs use all returns for alignment.
+Low logs and uneven ground can provide useful features in a real forest,
+so using this filter there would require its own tests.
 
 **Q: How do you find the ground on a slope?**
-CSF (Cloth Simulation Filter): flip the point cloud upside down and simulate a
-cloth falling onto it; where the cloth rests is the ground. It works on our
-15-degree test slopes (99 % precision).
+The Cloth Simulation Filter identifies ground by simulating cloth over an
+inverted point cloud. RANSAC is the fallback and fits terrain planes from
+the scan. The current Windows benchmark used RANSAC and measured about 99%
+ground precision and recall on the labelled simulated scans.
 
 **Q: What is DBH and why 1.3 m?**
 Diameter at Breast Height: the standard forestry measure of tree size, taken 1.3 m
@@ -58,7 +68,11 @@ on labelled shrub data (DigiForests) is planned future work.
 A FORWARD / TURN LEFT / TURN RIGHT / STOP state machine. It turns as soon as a
 rover-wide corridor ahead is blocked, keeps the same turn direction until clear
 (so it does not wobble), and only steers back to the goal when that way is free.
-It remembers recent obstacles because the LiDAR cannot see low objects right next to it.
+It remembers recent obstacles because LiDAR can lose sight of low objects
+near the rover. The stored height is measured above the ground under each
+obstacle. When the simulated rover moves uphill, the obstacle's XY changes
+relative to the rover and its ground clearance stays the same. A physical
+rover would need to account for pitch, roll, and terrain estimation errors.
 
 ## About machine learning
 
@@ -110,16 +124,18 @@ so we can measure accuracy exactly, which is impossible in a real forest without
 a survey. Then we checked on real data.
 
 **Q: How accurate is it?**
-With accurate positions: all 6 trees found and DBH within about 0.5 cm in the demo;
-93 % of trees found with 0.4 cm DBH error on 12 other test forests. Ground: 99 %
-precision. Ladder-fuel vs true shrubs: AUC 0.97. Navigation: 94 % success over 80 runs.
+On the seed 0 LiDAR-estimated map, we matched all six trees and measured
+trunk diameter with 1.81 cm RMSE. Mean tree recall was 83% over five other
+simulated forests. Ladder-fuel score versus shrub locations had an AUC of
+about 0.97 on the demo forest. On held-out navigation seeds 3000–3019, the
+rover reached 79 of 80 goals (98.75%), with one collision and zero timeouts.
 
-**Q: Then why only 5 of 63 trees on the real data?**
-Odometry drift. Small position errors blur each trunk across scans (visible as
-repeated slanted bands in `images/real_side_view.png`), so most trunks fail the
-strict circle checks. When positions are accurate the method works, so better
-odometry (for example adding the IMU) is the next step. The 5 trunks found have a
-median DBH of 23.5 cm, matching the dataset's 23.4 cm.
+**Q: What do the five detected stems and 63 labels mean on real data?**
+The earlier TreeScope run detected five stems in the processed point cloud.
+The field table contains 63 labelled trees. Blur from scan alignment, coverage,
+and the stem fit checks can affect the detection count. We still need common
+map coordinates to match detections to individual labels. The detected stems
+had a median DBH of 23.5 cm. The median across all labels was 23.4 cm.
 
 **Q: Did you compare tree by tree on the real data?**
 Not yet: our map and the dataset's labels use different coordinate frames.
@@ -129,14 +145,18 @@ We compared counts and size ranges. Aligning the frames is a planned task.
 If you pick one shrub square and one empty square at random, our score ranks
 the shrub square higher 97 % of the time. 0.5 would be random guessing.
 
-**Q: Why did the rover collide 4 times?**
-All 4 were rocks, mostly small ones just above the rover's 0.3 m ground
-clearance, which are hard to see in the LiDAR. We report it honestly rather
-than tuning on the test runs.
+**Q: What changed after the original four collisions?**
+The original simulator benchmark had four collisions, mostly with rocks as
+the rover approached them. We widened the simulated navigation scan, added a
+detection margin, and improved how the rover approaches a nearby goal.
+Replaying seeds 2000–2019 gave zero collisions and zero timeouts. On the
+fresh seeds 3000–3019, the rover collided once, on seed 3014 with 40 trees.
+The held-out run measures how the fixed setup performed on new forests.
 
 **Q: How long does it take to run?**
-The whole simulated demo (drive, mapping, analytics, 80 navigation runs) takes
-about 2 minutes on a laptop; the real forest analysis about 4 minutes.
+The quick demo runs four navigation trials. The full benchmark runs 80 and
+takes several minutes depending on the laptop. The saved figures are ready
+to show during the presentation.
 
 ## About the work
 
@@ -148,7 +168,8 @@ Anwita: LiDAR odometry and navigation. Prajwal: simulator and evaluation.
 **Q: What open-source tools did you use, and what did you write yourselves?**
 Used: Open3D, KISS-ICP, CSF, rosbags, NumPy/SciPy. Wrote: the simulator, the
 pipeline that connects everything, stem detection, the ladder-fuel index,
-navigation, and the evaluation; 63 automated tests run on every change.
+navigation, and the evaluation. Run `pytest -q` to see the test result for
+the installed configuration.
 
 **Q: What would you do with more time?**
 Better odometry (LiDAR + IMU), tree-by-tree validation on real data, the

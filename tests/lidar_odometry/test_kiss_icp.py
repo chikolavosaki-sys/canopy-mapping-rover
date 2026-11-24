@@ -1,6 +1,7 @@
 """KISS-ICP on a simulated forest traversal with exact ground-truth poses."""
 
 import json
+import sys
 
 import numpy as np
 import pytest
@@ -49,3 +50,35 @@ def test_traversal_poses_face_along_the_path() -> None:
     step = poses[1][:2, 3] - poses[0][:2, 3]
 
     assert np.dot(poses[0][:2, 0], step / np.linalg.norm(step)) > 0.9
+
+
+@pytest.mark.parametrize("mode", [None, "all-returns"])
+def test_synthetic_cli_aligns_the_shared_demo_forest(mode, tmp_path, monkeypatch) -> None:
+    """The standalone default reproduces the filtered demo and keeps the baseline selectable."""
+    pytest.importorskip("kiss_icp")
+    from canopy.lidar_odometry.cli import main
+
+    args = ["canopy-odometry", "--synthetic", "0", "--out", str(tmp_path)]
+    if mode is not None:
+        args.extend(["--odometry", mode])
+    monkeypatch.setattr(sys, "argv", args)
+    main()
+
+    summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert summary["frames"] == 26
+    assert summary["odometry_mode"] == (mode or "ground-filtered")
+    assert (summary["odometry_drift_percent"] < 2) == (mode is None)
+    assert np.load(tmp_path / "map.npy").shape[1] == 3
+
+
+def test_cli_rejects_ground_filtering_for_recorded_frames(monkeypatch, capsys) -> None:
+    from canopy.lidar_odometry.cli import main
+
+    monkeypatch.setattr(sys, "argv", [
+        "canopy-odometry", "--frames", "recording", "--odometry", "ground-filtered",
+        "--out", "unused",
+    ])
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 2
+    assert "--odometry requires --synthetic" in capsys.readouterr().err

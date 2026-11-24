@@ -14,6 +14,8 @@ The proposed ownership change is pending team confirmation. The water body modul
 
 ## Quick links
 
+- **[Setup and test guide](docs/SETUP.md)**: copy-paste install, data download and tests (Windows and Linux)
+- [Presentation kit](presentation/README.md)
 - [System architecture](docs/architecture.md)
 - [Dataset list](datasets/README.md)
 - [Dataset sufficiency](datasets/SUFFICIENCY.md)
@@ -26,6 +28,8 @@ The proposed ownership change is pending team confirmation. The water body modul
 - [References](references/README.md)
 
 ## Quick start
+
+New here? Follow **[docs/SETUP.md](docs/SETUP.md)** step by step. Short version:
 
 ```bash
 python -m venv .venv && source .venv/bin/activate

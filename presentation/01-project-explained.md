@@ -51,6 +51,14 @@ but automatically:
 | 6. Trees and DBH | Takes a thin slice at 1.2-1.4 m, finds round clusters, fits circles to get trunk diameter; checks the trunk is upright | Wrapping a tape round each trunk at chest height | **DBSCAN** clustering + **RANSAC** circle fit (like 3DFIN/FSCT) |
 | 7. Ladder fuel | For each 1 m square: how full the 1-4 m and 1-8 m height layers are, and how big the empty gap is between shrubs and the crown base | Looking up from the ground: is there a "ladder" of leaves to the crown? | our ladder-fuel index |
 | 8. Navigation | Splits the space ahead into 9 directions, checks a rover-wide corridor, and chooses FORWARD / TURN LEFT / TURN RIGHT / STOP | A careful walker who turns before bumping into a tree | our state machine |
+| 9. Machine learning | Labels every point as ground / trunk / shrub / crown / rock | A student who learns from labelled examples instead of memorised rules | **Random Forest** (scikit-learn) on 8 shape features per point |
+
+**Rules vs machine learning.** Steps 4-7 follow rules we wrote (for example "points
+forming a circle at 1.3 m are a trunk"). The ML model instead *learns* from
+examples: we show it hundreds of thousands of points whose true class we know
+(from the simulator), and it works out by itself what a trunk, the ground or a
+leaf looks like. For each point it looks at its 20 nearest neighbours: on a line
+(trunk), on a flat sheet (ground), or scattered (leaves).
 
 **Ladder-fuel index** = 0.5 x (how full 1-4 m is) + 0.2 x (how full 1-8 m is) +
 0.3 x (continuity: 1 when there is no gap to the crown, 0 when the gap is 4 m or more).
@@ -74,6 +82,8 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
 | Trees on 12 new test forests (accurate positions) | 93 % found, 96 % correct, DBH error 0.4 cm | Works beyond the one demo forest |
 | Ladder-fuel map vs true shrubs | AUC 0.88-0.97 (1.0 = perfect, 0.5 = guessing) | The map highlights the right places |
 | Navigation | 75 of 80 runs reached the goal (94 %), 4 collisions | Drives through forests of 10-80 trees on slopes |
+| ML point classifier, unseen simulated forests | 89.2 % accuracy (ground 99 %, rock 98 %, crown 93 %, trunk 87 %, shrub 70 %) | Learns the classes well from simulated examples |
+| ML point classifier, real labelled frames | ground 60 %, trunk 35 % | Much weaker on real data: it only learned from our simulated forest |
 | **Real forest (WSF-19)** | 2.7 million-point map, ladder map of 2,016 cells (17 % high-risk), 5 trunks with median DBH 23.5 cm vs 23.4 cm in the labels | The full pipeline runs on real data |
 
 ## 8. Honest limitations (say these; examiners respect them)
@@ -82,6 +92,10 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
   simulated demo). That blurs trunks in the map, so on real data only 5 of 63
   labelled trees were found. With exact positions, accuracy is excellent; better
   odometry is the next step.
+- The **ML model learned only from simulated forests**. On real labelled data it
+  recognises far fewer points (ground 60 %, trunk 35 %) because real ground is
+  rougher and real trunks are taller than in our simulator. This is called the
+  "sim-to-real gap"; training on real labelled data would fix it.
 - The rover is **simulated**; there is no physical rover in this project.
 - Ladder fuel is a **proxy** (a measurable stand-in), checked against shrub
   positions, not a full fire-behaviour model.
@@ -107,9 +121,16 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
 | Precision / recall | Of what we found, how much is right / of what exists, how much we found |
 | RMSE | Typical size of the error (root mean square error) |
 | AUC | How well a score separates two groups: 1.0 perfect, 0.5 random guessing |
+| Machine learning (supervised) | Learning a task from labelled examples instead of hand-written rules |
+| Random Forest | Many decision trees, each trained on random parts of the data; they vote |
+| Features | The numbers that describe each example to the model (here: local shape around a point) |
+| Train / test split | Learn on some data, measure on different, unseen data, so the score is honest |
+| Confusion matrix | Table of true class vs predicted class: shows which classes get mixed up |
+| Sim-to-real gap | A model trained in simulation performing worse on real data |
 
 ## 10. Tools used
 
 Python 3.10+, NumPy/SciPy, **Open3D** (3-D processing and the simulated LiDAR),
 **KISS-ICP** (odometry), **CSF** (ground), **rosbags** (reading robot recordings),
-matplotlib (figures), pytest + GitHub Actions (63 automatic tests on every change).
+**scikit-learn** (Random Forest), matplotlib (figures), pytest + GitHub Actions
+(67 automatic tests on every change).

@@ -22,4 +22,8 @@ def main() -> None:
         os.environ["CANOPY_CONFIG"] = str(args.config.resolve())
     from .pipeline import analyze_cloud
 
-    print(json.dumps(analyze_cloud(args.cloud, args.out), indent=2))
+    try:
+        summary = analyze_cloud(args.cloud, args.out)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+    print(json.dumps(summary, indent=2))

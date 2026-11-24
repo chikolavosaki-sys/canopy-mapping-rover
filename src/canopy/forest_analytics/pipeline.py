@@ -46,6 +46,8 @@ def analyse_points(points: np.ndarray) -> Analysis:
 def analyze_cloud(cloud_path: str | Path, out_dir: str | Path) -> dict:
     """Analyse a point-cloud file and write the results to ``out_dir``."""
     points = load_points(cloud_path)
+    if len(points) == 0:
+        raise ValueError("point cloud is empty")
     result = analyse_points(points)
     destination = Path(out_dir)
     destination.mkdir(parents=True, exist_ok=True)

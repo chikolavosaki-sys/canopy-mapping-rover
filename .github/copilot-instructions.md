@@ -1,36 +1,9 @@
 # Copilot instructions
 
-## Project
+Canopy Mapping Rover uses a Python/Open3D simulator and recorded LiDAR to map forest structure below the canopy. KISS-ICP estimates sensor motion. Forest analytics measure ground-normalised height, stems, trunk diameter, and a ladder-fuel proxy. Obstacle avoidance is evaluated in simulation.
 
-Canopy Mapping Rover uses recorded datasets and a pure-Python/Open3D
-simulator to test a ground rover's 3D LiDAR mapping pipeline from below the
-canopy. KISS-ICP is the primary LiDAR-only odometry implementation. FAST-LIO2
-is only an optional Docker comparison if time permits. The navigation branch
-uses angular sectors and a FORWARD/TURN/STOP state machine; the forest branch
-removes ground and estimates height-layer density, stems, and DBH. A small
-aerial/satellite context layer remains in scope. The water module is paused.
-
-## Ownership
-
-- Prithvi: forest analytics, final report, aerial context, and repository setup.
-- Anwita: LiDAR odometry and navigation.
-- Prajwal: simulator world and evaluation scripts.
-- Shared file: `src/canopy/aerial_context/indices.py` (NDVI and NDWI).
-
-## Rules
-
-- Use Python 3.10+ with type hints, short docstrings, and small functions.
-- Put every tunable number in `configs/default.yaml` and read it via `canopy.config`;
-  do not hard-code thresholds inside functions.
-- Explain LiDAR and SLAM code in plain language because the team is learning.
-- Never commit raw datasets; use `datasets/download_scripts/`.
-- Ignore generated `data/` and `results/` files except small summaries.
-- Log weekly work in `progress/<name>/`.
-- Update `docs/decisions.md` for scope or architecture changes.
-- Report measurable outcomes and honest limits in `docs/OUTCOMES.md`.
-- Keep `src/water_bodies/` and `datasets/water/` paused and unchanged.
-
-@docs/architecture.md
-@datasets/README.md
-@datasets/SUFFICIENCY.md
-@references/README.md
+- Use Python 3.10-compatible syntax. Run `python -m ruff check .` and `python -m pytest -q`.
+- Use `canopy.config` and `configs/default.yaml` for tunable defaults.
+- Describe outcomes with their inputs and limits. Use synthetic ground truth, held-out navigation seeds, and the recorded TreeScope checks as documented.
+- Keep raw inputs under `data/raw/` and new experiment outputs under `results/runs/`. Preserve the published snapshots.
+- Record changes to the pipeline or evaluation protocol in [design decisions](../docs/decisions.md). Use [architecture](../docs/architecture.md) and [outcomes](../docs/OUTCOMES.md) for the current system and published measurements.

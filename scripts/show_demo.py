@@ -54,6 +54,8 @@ def main() -> None:
         help="choose which simulated LiDAR returns are used to estimate motion",
     )
     args = parser.parse_args()
+    if args.seed < 0 or args.nav_seed < 0:
+        parser.error("--seed and --nav-seed must be non-negative")
     if not args.viewer_worker and args.view == "3d" and _launch_viewer(args.seed, args.odometry):
         return
     forest = make_demo_forest(args.seed)
@@ -61,6 +63,11 @@ def main() -> None:
     if args.viewer_worker:
         _show_3d(forest, truth, estimated, scans)
         return
+
+    import matplotlib
+
+    # Saving PNGs must work even when the display or its GUI backend failed.
+    matplotlib.use("Agg")
     nav_forest = make_forest(args.nav_seed, 30.0, 40)
     start, goal = start_and_goal(nav_forest)
     drive = run_rover(nav_forest, start, goal, Controller())

@@ -50,6 +50,8 @@ def main() -> None:
     )
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
+    if args.synthetic is not None and args.synthetic < 0:
+        parser.error("--synthetic requires a non-negative seed")
     if args.odometry is not None and args.synthetic is None:
         parser.error("--odometry requires --synthetic")
     if args.bag:

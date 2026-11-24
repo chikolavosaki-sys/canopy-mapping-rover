@@ -1,17 +1,2 @@
-# Ownership follows docs/decisions.md (Prithvi: forest analytics, aerial
-# context, repository setup; Anwita: odometry and navigation; Prajwal:
-# simulation and evaluation).
-
-# Repository setup and anything not listed below.
+# Default reviewer for this repository.
 * @chikolavosaki-sys
-
-src/canopy/forest_analytics/ @chikolavosaki-sys
-src/canopy/aerial_context/ @chikolavosaki-sys
-
-# TODO: replace with real GitHub handle.
-# src/canopy/lidar_odometry/ @ANWITA_USERNAME
-# src/canopy/navigation/ @ANWITA_USERNAME
-
-# TODO: replace with real GitHub handle.
-# src/canopy/simulation/ @PRAJWAL_USERNAME
-# src/canopy/evaluation/ @PRAJWAL_USERNAME

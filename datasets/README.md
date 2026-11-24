@@ -1,6 +1,6 @@
-# Datasets
+# Dataset catalogue
 
-These are links and planning notes only. The repository does not contain raw datasets.
+This catalogue records the sources evaluated during the project. TreeScope supplies the saved WSF-19 mapping and VAT-0723 classification examples. To reproduce them, start with the [real-data guide](../docs/running-on-real-data.md) and [file manifest](../data/MANIFEST.csv). The simulated demo generates its own inputs.
 
 | # | Name | Group | Owner | Link | Size | Licence | File format | Resolution or sensor | Region coverage | Status |
 |---:|---|---|---|---|---|---|---|---|---|---|
@@ -24,7 +24,7 @@ These are links and planning notes only. The repository does not contain raw dat
 
 The `VERIFIED` label here means the team has selected the named source for planning. It does not certify every field in the row.
 
-## Phase 6 access rule
+## Local data access
 
 The repository does not auto-download any dataset. Use the instruction scripts
 in `datasets/download_scripts/` to print official links and validate a local

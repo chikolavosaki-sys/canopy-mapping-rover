@@ -16,7 +16,10 @@ if ! python -c 'import open3d; import kiss_icp; import canopy.config'; then
 fi
 export LIBGL_ALWAYS_SOFTWARE=1   # avoids WSL graphics errors in the 3-D windows
 demo_out="$(mktemp -d "${TMPDIR:-/tmp}/canopy-live.XXXXXXXX")"
-real_cloud="results/real/wsf19/analysis/normalised_cloud.npy"
+real_cloud="results/runs/wsf19/analysis/normalised_cloud.npy"
+if [[ ! -f "$real_cloud" ]]; then
+  real_cloud="results/real/wsf19/analysis/normalised_cloud.npy"
+fi
 
 step() {  # step <number> <title> <what to say>
   echo

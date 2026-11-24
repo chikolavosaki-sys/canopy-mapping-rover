@@ -1,45 +1,24 @@
 # Presentation kit
 
-Everything needed to present the Canopy Mapping Rover, even if you did not
-write the code. Read the files in this order:
+Use the [plain-language walkthrough](01-project-explained.md) to learn the system, then rehearse how the simulator turns LiDAR scans into a map and forest measurements.
 
-| File | What it is for |
-|---|---|
-| [`01-project-explained.md`](01-project-explained.md) | The whole project in plain words: the problem, the idea, how each part works, key terms |
-| [`02-slides-and-script.md`](02-slides-and-script.md) | Slide by slide: what to **show** and what to **say** |
-| [`03-demo-commands.md`](03-demo-commands.md) | Exact commands: preparing results, the live demo, and what to do if something fails |
-| [`04-questions-and-answers.md`](04-questions-and-answers.md) | Questions examiners are likely to ask, with honest answers |
-| [`05-presentation-day.md`](05-presentation-day.md) | **Presentation day checklist:** what to run, when, and what to say |
-| `live_demo.sh` | The live demo: press Enter for each step; it shows what to say |
-| `prepare.sh` | Regenerates mapping figures and copies the saved ML benchmark figures into `images/` |
-| `make_slide_images.py` | Draws the real-forest pictures (used by `prepare.sh`) |
-| `images/` | All pictures for the slides (after running `prepare.sh`) |
+| File | Purpose |
+| --- | --- |
+| [Project explained](01-project-explained.md) | The problem, pipeline, results, and key terms |
+| [Slides and script](02-slides-and-script.md) | What to show and say for each slide |
+| [Demo commands](03-demo-commands.md) | How to generate results and run the live demonstration |
+| [Questions and answers](04-questions-and-answers.md) | Answers about design choices, evidence, and limitations |
+| [Presentation-day checklist](05-presentation-day.md) | What to prepare and what to open during the demo |
+| [Saved figures](images) | Simulator, TreeScope, and classifier figures ready to use |
 
-## Quick plan
+The [rehearsal script](prepare.sh) generates a fresh survey and figures in `results/runs/demo/`. The [interactive demo](live_demo.sh) walks through the simulator, TreeScope example, and classifier results. Both scripts use Bash. PowerShell commands are included in the [demo guide](03-demo-commands.md).
 
-1. **Before the presentation**, run the [rehearsal commands](03-demo-commands.md).
-   Use the current simulator figures from `results/semester-demo/` and the
-   saved TreeScope figures from `images/`. The simulated benchmark and
-   earlier TreeScope run are documented in
-   [OUTCOMES.md](../docs/OUTCOMES.md) and [real-data.md](../docs/real-data.md).
-2. **Practise** the script once each, and try the live demo from
-   `03-demo-commands.md` on the laptop you will present with.
-3. **On the day**, start with the saved survey map. Run the quick simulated
-   demo live if there is time.
-
-## Suggested split (about 12-15 minutes in total)
+## Suggested presenter split
 
 | Presenter | Slides | Topic |
-|---|---|---|
-| Prithvi | 1-5, 9, 11, 16-18 | Problem, idea, outputs, ladder fuel, ML, limits, impact, close |
-| Anwita | 6-8, 10 | How it works, mapping/odometry, trees, navigation |
-| Prajwal | 12-15 | Testing (simulator + real data), results, live demo |
+| --- | --- | --- |
+| Prithvi | 1–5, 9, 11, 16–18 | Problem, outputs, ladder fuel, ML, limitations, and close |
+| Anwita | 6–8, 10 | Mapping, tree measurement, and navigation |
+| Prajjwal | 12–15 | Evaluation, results, and live demo |
 
-Change it as you like; each slide's script stands on its own.
-
-## The one-sentence summary
-
-> Wildfires climb into treetops through low vegetation ("ladder fuels") that
-> drones and satellites cannot see under the canopy; our ground rover's 3-D
-> LiDAR maps that hidden layer, measures the trees, and drives itself through
-> the forest.
+Use the full held-out benchmark for the results slide and the four-trial quick run for the live demonstration. For the real-data example, use the saved figures or rerun the dataset workflow in advance. [Published outcomes](../docs/OUTCOMES.md) · [TreeScope experiment](../docs/real-data.md)

@@ -13,9 +13,7 @@ figures are in `presentation/images/`.
 canopy with 3-D LiDAR". Team names, guide, BIT Mesra, B.Tech CSE minor project.
 Background picture: `images/real_top_views.png` (left half) or a forest photo.
 
-**Say:** "Our project is a ground rover that uses a 3-D laser scanner to map the
-part of the forest that drones and satellites cannot see: the layer under the
-tree crowns, where wildfires find their way up into the trees."
+**Say:** "We simulate a ground rover that uses a 3D laser scanner to map the layer under the tree crowns. Shrubs and low branches in that layer can help fire climb into the canopy."
 
 ---
 
@@ -38,9 +36,7 @@ they can clear it there first."
 understorey". "On foot (manual survey): slow, small areas, measuring trunks with a
 tape".
 
-**Say:** "Drones and satellites see the top of the canopy, not what is under it.
-Surveys on foot work, but they are slow and cover small plots. We need something
-that sees under the canopy and covers ground automatically."
+**Say:** "The canopy can hide low vegetation in overhead imagery. Walking surveys can measure that vegetation and tree diameters directly. A ground rover gives us a way to study how those measurements could be automated."
 
 ---
 
@@ -224,7 +220,7 @@ detected trees. The heatmap shows the ladder-fuel score."
 - ML model trained on simulated forests: 89.2% accurate on unseen synthetic
   forests, but lower on real labels (sim-to-real gap)
 - Simulated rover only; no physical hardware
-- Ladder fuel is a proxy, validated against shrub positions
+- The ladder-fuel proxy was evaluated against known shrub positions in simulation
 - One real dataset so far (DigiForests and Indian Shivalik data need access)
 - Future: better odometry (LiDAR + IMU), more datasets, a real rover
 

@@ -14,8 +14,8 @@ Read this first. No code knowledge needed.
 
 ## 2. Why this is hard today
 
-- **Drones and satellites look from above.** The tree crowns block their view, so
-  they cannot see the shrubs and low branches *underneath*.
+- **Drones and satellites look from above.** Tree crowns can obscure shrubs and
+  low branches underneath.
 - **Manual surveys** (people walking through plots, measuring trunks with a tape)
   are slow, tiring and cover only small areas.
 - Forest inventories also need **how many trees** there are and **how thick** each
@@ -23,14 +23,14 @@ Read this first. No code knowledge needed.
 
 ## 3. Our idea
 
-A **ground rover** carrying a **3-D LiDAR** drives *under* the canopy. LiDAR is a
+We simulate a **ground rover** carrying a **3D LiDAR** beneath the canopy. LiDAR is a
 laser scanner: it sends out laser pulses all around and measures how long each
 takes to bounce back, giving millions of 3-D points (a "point cloud") that show
 the shape of everything around it, including the hidden understorey.
 
 ## 4. What the system produces
 
-1. A **ladder-fuel risk map**: a heatmap of the forest in 1 m squares, from 0 (no
+1. A **ladder-fuel proxy map**: a heatmap of the forest in 1 m squares, from 0 (no
    ladder) to 1 (continuous vegetation from the ground up to the crowns).
 2. A **tree list**: where each trunk is and its **DBH** (diameter at breast height,
    1.3 m above the ground: the standard way foresters measure tree size).

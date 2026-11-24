@@ -63,6 +63,11 @@ def main() -> None:
     if args.viewer_worker:
         _show_3d(forest, truth, estimated, scans)
         return
+
+    import matplotlib
+
+    # Saving PNGs must work even when the display or its GUI backend failed.
+    matplotlib.use("Agg")
     nav_forest = make_forest(args.nav_seed, 30.0, 40)
     start, goal = start_and_goal(nav_forest)
     drive = run_rover(nav_forest, start, goal, Controller())

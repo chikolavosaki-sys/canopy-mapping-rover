@@ -1,22 +1,12 @@
-# References
+# References and data credits
 
-Add papers and PDFs here as the team reads them. Do not add a paper unless its source and licence allow it.
+## Methods and software
 
-| # | Title | Authors/year | Type/link | One-line summary |
-|---:|---|---|---|---|
-| 1 | To be filled | To be filled | To be filled | To be filled |
+- **KISS-ICP.** Vizzo et al. (2023), *KISS-ICP: In Defense of Point-to-Point ICP*. The project uses KISS-ICP for frame-to-frame LiDAR odometry. [Paper](https://doi.org/10.1109/LRA.2023.3236571) · [Code](https://github.com/PRBonn/kiss-icp)
+- **Open3D.** Zhou, Park, and Koltun (2018), *Open3D: A Modern Library for 3D Data Processing*. The simulator uses its ray-casting library. [Paper](https://arxiv.org/abs/1801.09847) · [Code](https://github.com/isl-org/Open3D)
 
-## Dataset attribution
+## Dataset used in the saved experiments
 
-The project uses these datasets under their licences. Data files are never
-committed; `data/MANIFEST.csv` records what was downloaded and its sha256.
+- **TreeScope.** Cheng et al. (2023), *TreeScope: An Agricultural Robotics Dataset for LiDAR-Based Mapping of Trees in Forests and Orchards*. WSF-19 supplies the recorded mapping example and VAT-0723 supplies labelled ground and stem points for the classifier check. TreeScope is distributed under CC BY-NC-SA 4.0. [Paper](https://arxiv.org/abs/2310.02162) · [Dataset and terms](https://treescope.org/)
 
-- **TreeScope** — CC BY-NC-SA 4.0 (non-commercial, share-alike, attribution).
-  Source: https://treescope.org. Files used: VAT-0723 ground-truth
-  measurements, tree PCDs and labels; WSF-19 `cloud3.bag` and its
-  ground-truth scans. Cite the TreeScope dataset paper in any report.
-- **DigiForests** — CC BY-NC-SA 4.0 (non-commercial, attribution), per team
-  review; re-confirm on https://www.ipb.uni-bonn.de/data/digiforest-dataset/
-  (unreachable on 2026-10-23). Planned file: `digiforests-ground-m1.zip`.
-- **Shivalik Range Tree LiDAR** — CC BY 4.0, access on request via Zenodo
-  (https://doi.org/10.5281/zenodo.15362444). Not downloaded yet.
+The [data manifest](../data/MANIFEST.csv) records the source files and checksums. The [dataset catalogue](../datasets/README.md) covers additional sources the team considered, including DigiForests and Shivalik Range Tree LiDAR. The [learning links](youtube-links.md) collect introductory material on sensing, navigation, and forestry.

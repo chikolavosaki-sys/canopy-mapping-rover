@@ -1,3 +1,3 @@
-# Water bodies module: PAUSED
+# Water-body segmentation
 
-This module is paused, not deleted. It may return as a stretch goal during weeks 10-12. Do not expand it while the simulator-only canopy-mapping work is in progress.
+Water-body segmentation was considered during planning and deferred. The completed system maps below-canopy forest structure using the [canopy pipeline](../../docs/architecture.md).

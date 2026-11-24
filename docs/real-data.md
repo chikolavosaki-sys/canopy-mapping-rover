@@ -11,7 +11,7 @@ committed. Re-check with `python scripts/inspect_data.py`.
 | TreeScope VAT-0723 metadata | `metadata/VAT-0723.json`, `VAT-0723M-os-metadata.json` | 15 KB | Sensor/topic context |
 | TreeScope VAT-0723 field DBH | `ground_truth/measurements/VAT-0723M-gt.json` + 6 sequence maps | 1.1 MB | DBH RMSE vs field tape (real data) |
 | TreeScope VAT-0723 tree clouds | 77 × `ground_truth/pcds/VAT-0723M-0x_treeN.pcd` | 9.5 MB | DBH circle fit vs measured DBH |
-| TreeScope VAT-0723 labels | `ground_truth/labels/VAT-0723M.h5` | 103 MB | Ground segmentation and stem detection precision/recall |
+| TreeScope VAT-0723 labels | `ground_truth/labels/VAT-0723M.h5` | 103 MB | Ground and stem point-classification recall |
 | TreeScope WSF-19 recording | `input/cloud3.bag` | 618 MB | Odometry drift; end-to-end map → stems/density |
 | TreeScope WSF-19 labels | 91 × `ground_truth/scans/cloud3_N/` + `README.txt` | 70 MB | Tree detection recall and DBH on a real sequence |
 | **Total** | 4,328 files | **about 0.80 GB** | |
@@ -105,19 +105,19 @@ per LiDAR frame (the bag has 92). Each folder contains:
    failed and succeeded on a retry with 3 parallel jobs. No checksums are
    published, so the sha256 values in the manifest are our own.
 
-## Metric coverage after Tier 1
+## Measurements and available references
 
 | Outcome metric | Real data now |
 |---|---|
-| Odometry drift / ATE | WSF-19 `cloud3` (start-to-end drift; rough reference from scan crops) |
-| Tree recall + DBH RMSE | WSF-19 (63 trees, inches) and VAT-0723 (76 trees, metres, per-tree clouds) |
+| Odometry | WSF-19 `cloud3` produced a registered map and estimated trajectory. The short route lacked independent pose ground truth. |
+| Tree recall and DBH RMSE | Reference measurements are available. The saved WSF-19 map and the 63 labelled trees still need to be aligned to calculate matched-tree metrics. |
 | Ground / stem segmentation | VAT-0723 `.h5` (145 labelled frames) |
-| Ladder fuel vs shrub labels | **None yet:** blocked on DigiForests |
+| Ladder fuel vs shrub labels | The real-data shrub comparison remains open. |
 | Navigation | Simulator only (by design) |
 
 ## First full pipeline run on real data (2026-10-23)
 
-WSF-19 `cloud3.bag`, KISS-ICP + `canopy-analyze`, default settings. Commands:
+The saved experiment used WSF-19's `cloud3.bag`, all-returns KISS-ICP alignment, and CSF ground classification. The archived command log below uses the original output location. Use the [reproduction guide](running-on-real-data.md) for a fresh run in a separate folder.
 
 ```bash
 canopy-odometry --bag data/raw/treescope/WSF-19/input/cloud3.bag --topic /velodyne/cloud \

@@ -22,4 +22,7 @@ results/**
 !results/**/*.md
 !results/**/*.png
 !results/**/*.csv
+
+# Local runs created by the setup and rehearsal commands.
+/results/runs/
 *.egg-info/

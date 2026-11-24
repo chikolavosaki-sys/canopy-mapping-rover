@@ -1,192 +1,86 @@
-# Setup and test guide
+# Setup and verification
 
-Copy each block into the terminal **one at a time** and wait for it to finish
-before the next. Total time: about 1-1.5 hours, mostly waiting for downloads.
+Use Git and Python 3.10 or 3.11, the versions tested by GitHub Actions. Run the commands from the folder containing `pyproject.toml`. The simulated demo, navigation benchmark, and automated tests use local fixtures or generated data. The TreeScope downloads are needed for real-data reruns.
 
-- **Windows:** do Part A first, then everything else in the Ubuntu window.
-- **Linux (Ubuntu/Debian):** start at Part B.
-- Native Windows without WSL works only partly: see Part G.
+## Install on Windows
 
-## Part A. Windows only: install Ubuntu (WSL), once
-
-Open **PowerShell as Administrator** (Start, type "PowerShell", right-click,
-"Run as administrator"):
+Open PowerShell in the clone. Check `python --version` before creating the environment, or use `py -3.11 -m venv .venv` if multiple Python versions are installed.
 
 ```powershell
-wsl --install -d Ubuntu
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -e ".[core,odometry,ml,dev]"
+.\.venv\Scripts\python.exe -c "import canopy.config, open3d, kiss_icp, sklearn; print('Setup OK')"
 ```
 
-Restart the PC. Open **Ubuntu** from the Start menu and choose a username and
-password (the password does not show while typing; that is normal). Do
-everything below **in the Ubuntu window**.
+These commands use the interpreter directly, so changing PowerShell's execution policy is unnecessary. To enable the optional cloth simulation filter (CSF) on Windows, install Visual Studio Build Tools with the **Desktop development with C++** workload and a Windows SDK, then run:
 
-## Part B. One-time setup (about 15 minutes)
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[core,csf,odometry,ml,dev]"
+.\.venv\Scripts\python.exe -c "import CSF; print('CSF available')"
+```
 
-**B1. System packages** (asks for your Ubuntu password):
+If the CSF build fails, the first install command provides the built-in RANSAC ground classifier. Each demo report records the backend used.
+
+## Install on Linux, WSL, or macOS
+
+On Ubuntu or Debian, install the build and Open3D runtime libraries. On Windows with WSL, run these commands inside the Linux distribution.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git wget python3 python3-venv python3-pip build-essential \
-  libusb-1.0-0 libgl1 libegl1 libgomp1 libx11-6
-python3 --version
+sudo apt-get install -y git python3-venv build-essential libusb-1.0-0 libgl1 libegl1 libgomp1 libx11-6
 ```
 
-The last line must show **Python 3.10, 3.11 or 3.12**. If it shows 3.13 or
-newer, run this and use `python3.12` instead of `python3` in B3:
-
-```bash
-sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt-get update
-sudo apt-get install -y python3.12 python3.12-venv
-```
-
-**B2. Download the code:**
-
-```bash
-mkdir -p ~/projects && cd ~/projects
-git clone https://github.com/chikolavosaki-sys/canopy-mapping-rover.git
-cd canopy-mapping-rover
-```
-
-**B3. Python environment and libraries** (5-10 minutes):
+On macOS, start with a Git installation and Python 3.10 or 3.11, then use the virtual-environment commands below. Install the Xcode Command Line Tools if a dependency needs a local compiler.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -e ".[core,csf,odometry,eval,ml,dev]"
+python -m pip install --upgrade pip
+python -m pip install -e ".[core,csf,odometry,ml,dev]"
+python -c "import canopy.config, open3d, kiss_icp, sklearn; print('Setup OK')"
 ```
 
-If the last command fails with a C++/compiler error on
-`cloth-simulation-filter`, run this instead (ground detection then uses the
-built-in RANSAC fallback; everything else is the same):
+If CSF fails to build, repeat the install with `.[core,odometry,ml,dev]` to use RANSAC.
 
-```bash
-pip install -e ".[core,odometry,eval,ml,dev]"
-```
+## Run the checks and demo
 
-**B4. Quick check:**
-
-```bash
-python -c "import canopy, open3d, kiss_icp, sklearn; print('Setup OK')"
-```
-
-Expected: `Setup OK`.
-
-## Part C. The real forest data (about 0.8 GB)
-
-Only the real-forest steps need this; the simulator, demo, navigation, ML
-training and tests work without it. We use one dataset, **TreeScope**
-(https://treescope.org, licence CC BY-NC-SA 4.0: non-commercial use, give
-credit). Every file's URL, size and checksum is listed in `data/MANIFEST.csv`.
-Never commit `data/` to git.
-
-**Fastest: copy from a teammate.** Ask someone who has it to copy their
-`canopy-mapping-rover/data/` folder (pendrive or Google Drive) and put it inside
-your repo as `canopy-mapping-rover/data/` (from Ubuntu, `explorer.exe .` opens
-the repo folder in Windows). Then skip to C2.
-
-**C1. Or download it** (30-60 minutes; 4 files at a time; complete files are
-skipped, so it is safe to run again):
-
-```bash
-cd ~/projects/canopy-mapping-rover
-tail -n +2 data/MANIFEST.csv | cut -d, -f1,2,3 | tr ',' ' ' | \
-  xargs -P 4 -n 3 sh -c '
-    f="data/raw/$0"
-    [ "$(stat -c %s "$f" 2>/dev/null)" = "$2" ] && exit 0
-    mkdir -p "$(dirname "$f")"
-    wget -c -q --tries=5 --timeout=60 -O "$f" "$1" || echo "FAILED: $1"'
-echo "Download pass finished"
-```
-
-If any `FAILED:` lines appear, **run the same block again**: it only fetches
-what is missing (the server sometimes drops requests).
-
-**C2. Verify every file:**
-
-```bash
-tail -n +2 data/MANIFEST.csv | awk -F, '{print $4"  data/raw/"$1}' | sha256sum -c --quiet \
-  && echo "ALL DATA OK"
-```
-
-Expected: `ALL DATA OK`. If it lists files instead, run C1 again, then C2.
-
-## Part D. Test everything (about 10 minutes)
-
-Start **every** new terminal with:
-
-```bash
-cd ~/projects/canopy-mapping-rover && source .venv/bin/activate
-```
-
-| Step | Command | Expected result |
-|---|---|---|
-| D1. Automatic tests (~2 min) | `pytest -q` | Ends with `passed` (67 tests; a few "skipped" are fine) |
-| D2. Synthetic demo (~2 min) | `python scripts/run_all.py --seed 0 && cat results/demo/report.md` | Exact-pose map: Trees detected **6**, recall **1.0000** |
-| D3. Figures (~15 s) | `python scripts/show_demo.py` | `Wrote forest_map.png, lidar_scan.png, odometry.png` |
-| D4. ML model (~2 min) | `python scripts/train_point_classifier.py --out results/ml-rehearsal` | Writes a new report and figures without replacing the saved benchmark |
-| D5. Real forest: odometry (~3 min, needs Part C) | block below | `"frames": 92`, `path_length_m` about 8.6 |
-| D6. Real forest: analytics (~1 min) | block below | `"n_stems": 5`, `"ladder_cells_above_0_5": 333` |
-| D7. All slide images (~5 min) | `bash presentation/prepare.sh` | Lists the images in `presentation/images/` |
-| D8. 3-D view | `python scripts/show_demo.py --view 3d` | A window opens; drag to rotate, `Q` closes |
-
-The [saved ML benchmark](../results/ml/report.md) reports 89.2% accuracy on
-unseen simulated forests and includes the TreeScope check. A local rerun skips
-the TreeScope check when the labelled frames are absent.
-
-**D5 and D6, real forest:**
-
-```bash
-canopy-odometry --bag data/raw/treescope/WSF-19/input/cloud3.bag \
-  --topic /velodyne/cloud --out results/real/wsf19
-
-python -c "import numpy as np; from canopy.io import crop_box; \
-m=np.load('results/real/wsf19/map.npy'); p=np.load('results/real/wsf19/poses.npy')[:,:3,3]; \
-np.save('results/real/wsf19/map_crop.npy', crop_box(m, p.min(0)-[20,20,5], p.max(0)+[20,20,25]))"
-
-canopy-analyze results/real/wsf19/map_crop.npy --out results/real/wsf19/analysis
-```
-
-To see results in Windows: `explorer.exe results` opens the folder.
-
-## Part E. Presentation day
-
-```bash
-cd ~/projects/canopy-mapping-rover && source .venv/bin/activate
-git pull                              # latest code
-bash presentation/live_demo.sh        # press Enter for each step
-```
-
-Full checklist: [`presentation/05-presentation-day.md`](../presentation/05-presentation-day.md).
-
-## Part F. If something goes wrong
-
-| Error | Fix |
-|---|---|
-| `ModuleNotFoundError: canopy` (or `open3d`, `sklearn`) | `cd ~/projects/canopy-mapping-rover && source .venv/bin/activate` |
-| `libusb-1.0.so.0` / `libEGL.so.1` not found | Run B1 again |
-| `pip` fails on `cloth-simulation-filter` | Use the install command without `csf` (B3) |
-| 3-D window does not open, or `MESA` / `libEGL` warnings | Put `LIBGL_ALWAYS_SOFTWARE=1 ` in front of the command. On old Windows 10 without WSLg, 3-D windows do not work: use the PNG figures |
-| `bag file ... not found` | Part C is missing or the files are in the wrong place: run C1 and C2 |
-| Download shows `FAILED` or 403 | Run C1 again later; it resumes |
-| A command seems stuck | It is working: the demos print nothing for 1-2 minutes. Do not press `Ctrl+C` |
-
-## Part G. Native Windows without WSL (not recommended)
-
-In PowerShell, with Python 3.12 from python.org ("Add python.exe to PATH"
-ticked) and Git for Windows installed:
+**PowerShell**
 
 ```powershell
-cd $HOME\Documents
-git clone https://github.com/chikolavosaki-sys/canopy-mapping-rover.git
-cd canopy-mapping-rover
-python -m venv .venv
-.venv\Scripts\Activate.ps1      # if blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-pip install -e ".[core,odometry,eval,ml,dev]"
-pytest -q
-python scripts/run_all.py --seed 0
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/runs/demo
+.\.venv\Scripts\python.exe scripts/show_demo.py --out results/runs/demo/figures
 ```
 
-These work on native Windows: tests, the synthetic demo, figures, ML and the 3-D
-view. These do not: the data download (Part C), the real-forest crop step,
-`prepare.sh` and `live_demo.sh`. Use WSL for those.
+**Bash or Zsh with the environment activated**
+
+```bash
+python -m ruff check .
+python -m pytest -q
+python scripts/run_all.py --seed 0 --fast --out results/runs/demo
+python scripts/show_demo.py --out results/runs/demo/figures
+```
+
+The fast run writes `survey_map.png`, `trees.csv`, `summary.json`, and `report.md` and runs four navigation scenarios. Use `python scripts/run_all.py --seed 0 --out results/runs/benchmark` for the 80-trial benchmark and see [outcomes](OUTCOMES.md) for the reference results. Use the direct virtual-environment interpreter on Windows.
+
+The [CI workflow](../.github/workflows/ci.yml) runs lint and tests on Linux with CSF and on Windows with the RANSAC fallback. Linux jobs also install the wheel and run the installed odometry command from outside the checkout.
+
+For the optional 3D view, add `--view 3d` to `scripts/show_demo.py`. A display and working OpenGL are needed for interactive rendering. If that view fails to launch, the script can fall back to saved PNGs.
+
+## Optional data and ML workflows
+
+- **Recorded LiDAR and static clouds.** Follow the [real-data guide](running-on-real-data.md) for the download manifest, local layout, and processing commands.
+- **Classification.** Run `python scripts/train_point_classifier.py --out results/runs/ml`. The [saved ML report](../results/ml/report.md) includes accuracy on unseen synthetic forests and the VAT-0723 recall check. The local run can include that check if the labelled TreeScope frames are available.
+- **Presentation.** Follow the [demo walkthrough](../presentation/03-demo-commands.md). It uses the synthetic survey and the saved TreeScope figures.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| `ModuleNotFoundError` for `canopy`, `open3d`, or `kiss_icp` | Run from the repository folder and use the interpreter you installed the extras into. |
+| `cloth-simulation-filter` cannot build | Install the platform build tools or use the RANSAC install command above. |
+| `libusb-1.0.so.0` or `libEGL.so.1` is missing | Install the Ubuntu/Debian runtime libraries above. |
+| OpenGL warnings on WSL or a headless machine | Run the PNG example, or try `LIBGL_ALWAYS_SOFTWARE=1` in WSL before opening the viewer. |
+| Missing ROS bag or labels | Check the paths and checksums in the [real-data guide](running-on-real-data.md). |

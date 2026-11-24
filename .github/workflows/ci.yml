@@ -18,6 +18,13 @@ jobs:
       # Open3D (simulated LiDAR) needs these system libraries on Ubuntu.
       - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0 libgl1 libegl1 libgomp1 libx11-6
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[core,csf,ml,dev]"   # csf: test CSF; ml: test the classifier
+      - run: pip install -e ".[core,csf,odometry,ml,dev]"
       - run: ruff check .
       - run: pytest -q
+      - name: Install the release wheel
+        run: |
+          python -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/canopy-wheel" .
+          python -m pip install --force-reinstall --no-deps "$RUNNER_TEMP"/canopy-wheel/*.whl
+      - name: Run the installed wheel outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: canopy-odometry --synthetic 0 --out canopy-wheel-smoke

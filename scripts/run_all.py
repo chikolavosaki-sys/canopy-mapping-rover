@@ -351,6 +351,8 @@ def main() -> None:
         "--update-outcomes", action="store_true", help="rewrite the table in docs/OUTCOMES.md"
     )
     args = parser.parse_args()
+    if args.seed < 0:
+        parser.error("--seed must be non-negative")
     if args.fast and args.update_outcomes:
         parser.error("--fast runs only 4 navigation trials; do not use it with --update-outcomes")
     print(f"Running the synthetic forest survey (seed {args.seed})...", flush=True)

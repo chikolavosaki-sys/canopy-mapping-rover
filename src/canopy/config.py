@@ -14,13 +14,16 @@ from typing import Any
 
 import yaml
 
-_REPO_CONFIG = Path(__file__).resolve().parents[2] / "configs" / "default.yaml"
-DEFAULT_CONFIG = Path(os.environ.get("CANOPY_CONFIG", _REPO_CONFIG))
+_PACKAGE_DIR = Path(__file__).resolve().parent
+_REPO_CONFIG = _PACKAGE_DIR.parents[1] / "configs" / "default.yaml"
+_INSTALLED_CONFIG = _PACKAGE_DIR / "default.yaml"
+_DEFAULT_PATH = _INSTALLED_CONFIG if _INSTALLED_CONFIG.is_file() else _REPO_CONFIG
+DEFAULT_CONFIG = Path(os.environ.get("CANOPY_CONFIG", _DEFAULT_PATH))
 
 
 @lru_cache(maxsize=8)
 def _read(path: Path) -> dict[str, Any]:
-    return yaml.safe_load(path.read_text())
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
 def load_config(path: str | Path = DEFAULT_CONFIG) -> dict[str, Any]:

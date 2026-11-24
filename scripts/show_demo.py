@@ -54,6 +54,8 @@ def main() -> None:
         help="choose which simulated LiDAR returns are used to estimate motion",
     )
     args = parser.parse_args()
+    if args.seed < 0 or args.nav_seed < 0:
+        parser.error("--seed and --nav-seed must be non-negative")
     if not args.viewer_worker and args.view == "3d" and _launch_viewer(args.seed, args.odometry):
         return
     forest = make_demo_forest(args.seed)

@@ -15,14 +15,21 @@ def list_topics(path: str | Path) -> list[str]:
 
 
 def iter_pointclouds(path: str | Path, topic: str) -> Iterator[tuple[int, np.ndarray]]:
-    """Yield ``(timestamp, (N, 3) points)`` for one PointCloud2 topic."""
+    """Yield timestamps and finite XYZ returns for one PointCloud2 topic."""
     from rosbags.highlevel import AnyReader
 
     with AnyReader([Path(path)]) as reader:
-        connections = [item for item in reader.connections if item.topic == topic]
+        connections = [
+            item for item in reader.connections
+            if item.topic == topic and item.msgtype == "sensor_msgs/msg/PointCloud2"
+        ]
+        if not connections:
+            return
         for connection, timestamp, raw in reader.messages(connections=connections):
             message = reader.deserialize(raw, connection.msgtype)
-            yield timestamp, _pointcloud2_points(message)
+            points = _pointcloud2_points(message)
+            if len(points):
+                yield timestamp, points
 
 
 def iter_odometry(path: str | Path, topic: str) -> Iterator[tuple[int, np.ndarray]]:
@@ -30,7 +37,12 @@ def iter_odometry(path: str | Path, topic: str) -> Iterator[tuple[int, np.ndarra
     from rosbags.highlevel import AnyReader
 
     with AnyReader([Path(path)]) as reader:
-        connections = [item for item in reader.connections if item.topic == topic]
+        connections = [
+            item for item in reader.connections
+            if item.topic == topic and item.msgtype == "nav_msgs/msg/Odometry"
+        ]
+        if not connections:
+            return
         for connection, timestamp, raw in reader.messages(connections=connections):
             message = reader.deserialize(raw, connection.msgtype)
             yield timestamp, _odometry_pose(message)
@@ -53,12 +65,13 @@ def _pointcloud2_points(message: object) -> np.ndarray:
     if not {"x", "y", "z"} <= fields.keys():
         raise ValueError("PointCloud2 message must contain x, y, and z fields")
     datatype = {7: "f4", 8: "f8"}
+    byte_order = ">" if message.is_bigendian else "<"
     descriptors = []
     for name in ("x", "y", "z"):
         field = fields[name]
         if field.datatype not in datatype or field.count != 1:
             raise ValueError("XYZ fields must be scalar float32 or float64 values")
-        descriptors.append((name, field.offset, datatype[field.datatype]))
+        descriptors.append((name, field.offset, byte_order + datatype[field.datatype]))
     dtype = np.dtype(
         {
             "names": [item[0] for item in descriptors],
@@ -67,8 +80,16 @@ def _pointcloud2_points(message: object) -> np.ndarray:
             "itemsize": message.point_step,
         }
     )
-    points = np.frombuffer(bytes(message.data), dtype=dtype, count=message.width * message.height)
-    return np.column_stack((points["x"], points["y"], points["z"])).astype(np.float64)
+    if message.width == 0 or message.height == 0:
+        return np.empty((0, 3), dtype=np.float64)
+    points = np.ndarray(
+        (message.height, message.width),
+        dtype=dtype,
+        buffer=bytes(message.data),
+        strides=(message.row_step, message.point_step),
+    )
+    xyz = np.column_stack([points[name].ravel() for name in ("x", "y", "z")]).astype(np.float64)
+    return xyz[np.isfinite(xyz).all(axis=1)]
 
 
 def _quaternion_matrix(x: float, y: float, z: float, w: float) -> np.ndarray:

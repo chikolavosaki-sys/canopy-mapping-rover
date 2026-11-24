@@ -4,8 +4,8 @@ Each step: scan with the simulated LiDAR, summarise obstacles in the rover
 frame, ask the controller for a state, then move. FORWARD drives one step
 (steering towards the goal when clear), TURN_LEFT/RIGHT rotate in place, and
 STOP waits. A collision is the rover's footprint circle touching a trunk
-cylinder or a rock's cross-section at the rover's ground clearance (lower
-parts pass under the chassis, which is also why the LiDAR ignores them).
+cylinder or a rock's cross-section at the rover's ground clearance. LiDAR
+obstacle detection uses a lower threshold to allow for measurement error.
 Shrubs are soft and do not count, though the rover still avoids them.
 """
 
@@ -23,6 +23,7 @@ from .lidar import Sensor, simulate_scan
 from .synthetic_forest import Forest
 
 _NAV = section("navigation")
+_NAV_SENSOR = Sensor(**_NAV.get("lidar", {}))
 
 
 @dataclass(frozen=True)
@@ -47,7 +48,7 @@ def run_rover(
     start: np.ndarray,
     goal: np.ndarray,
     controller: Controller,
-    sensor: Sensor = Sensor(),
+    sensor: Sensor = _NAV_SENSOR,
     max_steps: int = _NAV["max_steps"],
     rover_radius: float = _NAV["rover_radius_m"],
     step_size: float = _NAV["step_size_m"],
@@ -57,37 +58,51 @@ def run_rover(
     pose[2, 3] = float(forest.terrain.height(*pose[:2, 3]))
     target = np.asarray(goal, dtype=float)[:2]
     turn = np.deg2rad(_NAV["turn_angle_deg"])
+    align_distance = _NAV.get("goal_align_distance_m", 1.0)
+    goal_tolerance = _NAV["goal_tolerance_m"]
     poses, path_length = [pose.copy()], 0.0
     straight = float(np.linalg.norm(target - pose[:2, 3]))
     memory = ObstacleMemory()
     for _ in range(max_steps):
-        if np.linalg.norm(target - pose[:2, 3]) <= _NAV["goal_tolerance_m"]:
+        remaining = float(np.linalg.norm(target - pose[:2, 3]))
+        if remaining <= goal_tolerance:
             return RunResult(poses, True, False, False, path_length, straight)
         local = memory.update(_sense(forest, pose, sensor), pose)
         sectors, goal_heading = nearest_obstacles(local), _goal_heading(pose, target)
-        state = controller.update(sectors, corridor_clearance(local), goal_heading)
         heading = _heading(pose)
+        step = min(step_size, remaining)
+        direct = remaining <= align_distance and _goal_is_clear(
+            local, goal_heading, remaining, rover_radius
+        )
+        if direct and abs(goal_heading) > controller.max_forward_turn:
+            pose = _pose_at(pose[:2, 3], heading + np.clip(goal_heading, -turn, turn), forest)
+            poses.append(pose.copy())
+            continue
+        # At short range, the normal look-ahead can see obstacles beyond a clear goal.
+        state = MotionState.FORWARD if direct else controller.update(
+            sectors, corridor_clearance(local), goal_heading
+        )
         if state == MotionState.TURN_LEFT:
             pose = _pose_at(pose[:2, 3], heading + turn, forest)
         elif state == MotionState.TURN_RIGHT:
             pose = _pose_at(pose[:2, 3], heading - turn, forest)
         elif state == MotionState.FORWARD:
-            remaining = float(np.linalg.norm(target - pose[:2, 3]))
-            steer = _safe_steer(local, sectors, goal_heading, controller, min(step_size, remaining))
+            steer = goal_heading if direct else _safe_steer(
+                local, sectors, goal_heading, controller, step
+            )
             if steer is None:  # no safe step: rotate away from the closest obstacle instead
                 poses.append(_pose_at(pose[:2, 3], heading + _away(local) * turn, forest))
                 pose = poses[-1].copy()
                 continue
             heading += steer
-            position = pose[:2, 3] + min(step_size, remaining) * np.array(
-                [np.cos(heading), np.sin(heading)]
-            )
+            position = pose[:2, 3] + step * np.array([np.cos(heading), np.sin(heading)])
             if collides(position, forest, rover_radius):
                 return RunResult(poses, False, True, False, path_length, straight)
-            path_length += min(step_size, remaining)
+            path_length += step
             pose = _pose_at(position, heading, forest)
         poses.append(pose.copy())
-    return RunResult(poses, False, False, True, path_length, straight)
+    reached = bool(np.linalg.norm(target - pose[:2, 3]) <= goal_tolerance)
+    return RunResult(poses, reached, False, not reached, path_length, straight)
 
 
 def collides(position: np.ndarray, forest: Forest, rover_radius: float) -> bool:
@@ -139,13 +154,21 @@ def _safe_steer(
     return None
 
 
+def _goal_is_clear(local: np.ndarray, heading: float, distance: float, rover_radius: float) -> bool:
+    """Check the full approach to a nearby goal, including the stopped footprint."""
+    needed = rover_radius + _NAV["corridor_margin_m"]
+    rotated = _rotate(local, -heading)
+    return (
+        corridor_clearance(rotated, half_width=needed) >= distance
+        and footprint_clearance(rotated, np.array([distance, 0.0])) >= needed
+    )
+
+
 def _away(local: np.ndarray) -> float:
     """+1 (turn left) if the closest obstacle point is on the right, else -1."""
-    tall = local[(local[:, 2] >= _NAV["obstacle_min_height_m"])
-                 & (local[:, 2] <= _NAV["rover_height_m"])]
-    if not len(tall):
+    if not len(local):
         return 1.0
-    closest = tall[np.argmin(np.linalg.norm(tall[:, :2], axis=1))]
+    closest = local[np.argmin(np.linalg.norm(local[:, :2], axis=1))]
     return 1.0 if closest[1] < 0 else -1.0
 
 

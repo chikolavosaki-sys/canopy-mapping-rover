@@ -1,1 +1,1 @@
--e .[core,odometry,eval,dev]
+-e .[core,odometry,eval,ml,dev]

@@ -32,6 +32,7 @@ def evaluate_navigation(
     out_dir: str | Path | None = None,
 ) -> list[NavRun]:
     """Drive across a fresh forest for every (density, seed) pair; optionally write CSVs."""
+    seeds = tuple(seeds)
     runs = []
     for tree_count in tree_counts:
         for seed in seeds:

@@ -15,14 +15,15 @@ write the code. Read the files in this order:
 
 ## Quick plan
 
-1. **One day before:** run `bash presentation/prepare.sh` (about 5 minutes). Put the
-   pictures from `images/` into your slides. Use the numbers in
-   `02-slides-and-script.md` (they come from `results/demo/report.md` and
-   `docs/real-data.md`; re-check them if you re-ran anything).
+1. **Before the presentation**, run the [rehearsal commands](03-demo-commands.md).
+   Use the current simulator figures from `results/semester-demo/` and the
+   saved TreeScope figures from `images/`. The simulated benchmark and
+   earlier TreeScope run are documented in
+   [OUTCOMES.md](../docs/OUTCOMES.md) and [real-data.md](../docs/real-data.md).
 2. **Practise** the script once each, and try the live demo from
    `03-demo-commands.md` on the laptop you will present with.
-3. **On the day:** keep the pictures in the slides as the backup; the live demo is a
-   bonus, not a dependency.
+3. **On the day**, start with the saved survey map. Run the quick simulated
+   demo live if there is time.
 
 ## Suggested split (about 12-15 minutes in total)
 

@@ -34,7 +34,8 @@ the shape of everything around it, including the hidden understorey.
    ladder) to 1 (continuous vegetation from the ground up to the crowns).
 2. A **tree list**: where each trunk is and its **DBH** (diameter at breast height,
    1.3 m above the ground: the standard way foresters measure tree size).
-3. **Safe driving**: the rover avoids trunks and rocks on its own, on slopes.
+3. **Simulated navigation results** showing how often the rover reaches a goal
+   and whether it collides with an obstacle.
 
 ## 5. How it works, step by step
 
@@ -65,23 +66,28 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
 - **Real data**: a public forest recording, **TreeScope WSF-19** (a real LiDAR + IMU
   drive through a forest, with tree diameter labels). We ran the whole pipeline on it.
 
-## 7. Key results (from `results/demo/report.md` and `docs/real-data.md`)
+## 7. Key results
 
 | What | Result | Meaning |
 |---|---|---|
-| Ground detection (simulated scans) | 99.3 % precision, 97.9 % recall | Almost every ground point found, almost no mistakes |
-| Trees, with accurate rover positions | 6 of 6 found, DBH error 0.5 cm | Trunk thickness measured to about half a centimetre |
-| Trees on 12 new test forests (accurate positions) | 93 % found, 96 % correct, DBH error 0.4 cm | Works beyond the one demo forest |
-| Ladder-fuel map vs true shrubs | AUC 0.88-0.97 (1.0 = perfect, 0.5 = guessing) | The map highlights the right places |
-| Navigation | 75 of 80 runs reached the goal (94 %), 4 collisions | Drives through forests of 10-80 trees on slopes |
-| **Real forest (WSF-19)** | 2.7 million-point map, ladder map of 2,016 cells (17 % high-risk), 5 trunks with median DBH 23.5 cm vs 23.4 cm in the labels | The full pipeline runs on real data |
+| Final drift on the seed 0 route | 0.85% over 10.67 m | The estimated route ended about 9 cm from the reference endpoint |
+| Trees from the LiDAR-estimated map | 6 of 6 matched, 1.81 cm DBH RMSE | The map supports trunk locations and diameter estimates on this plot |
+| Trees on five more simulated forests | 83% mean recall | Tree detection varied between forests |
+| Ladder-fuel map vs true shrubs | AUC about 0.97 on the demo forest | Shrub cells usually ranked higher |
+| Navigation | 80 of 80 regression scenarios reached the goal, zero collisions and timeouts | A repeatable obstacle-avoidance check across four forest densities |
+| Earlier real forest run (WSF-19) | 2.7 million-point map, 2,016 ladder-fuel cells and five detected stems | Tree-by-tree matches with the field survey are pending |
+
+See the [simulated benchmark](../docs/OUTCOMES.md) and
+[real-data results](../docs/real-data.md) for details.
 
 ## 8. Honest limitations (say these; examiners respect them)
 
-- **Odometry drift**: the position estimate slowly drifts (about 11 % in the
-  simulated demo). That blurs trunks in the map, so on real data only 5 of 63
-  labelled trees were found. With exact positions, accuracy is excellent; better
-  odometry is the next step.
+- Position drift can blur trunks in the map. Ground-filtered alignment
+  improved the simulated demo. Recorded-data alignment uses all returns,
+  because low features such as fallen logs may be valuable there.
+- The five detected stems in the earlier TreeScope run and the 63 field
+  labels are separate counts. Measuring real tree recall requires matching
+  the detections to the labels.
 - The rover is **simulated**; there is no physical rover in this project.
 - Ladder fuel is a **proxy** (a measurable stand-in), checked against shrub
   positions, not a full fire-behaviour model.
@@ -112,4 +118,4 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
 
 Python 3.10+, NumPy/SciPy, **Open3D** (3-D processing and the simulated LiDAR),
 **KISS-ICP** (odometry), **CSF** (ground), **rosbags** (reading robot recordings),
-matplotlib (figures), pytest + GitHub Actions (63 automatic tests on every change).
+matplotlib (figures), pytest, and GitHub Actions.

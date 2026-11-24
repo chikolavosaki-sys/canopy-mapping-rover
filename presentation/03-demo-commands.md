@@ -1,119 +1,97 @@
-# Commands: preparing, the live demo, and fallbacks
+# Demo commands
 
-All commands run in the Ubuntu (WSL) terminal from the repository folder.
-Start every session with:
+Run these from the project folder after setting up the Python environment in the
+[README](../README.md). The live walkthrough uses only the synthetic forest.
+The saved TreeScope figures are ready to show on a fresh clone.
+
+## A. Prepare and rehearse
+
+On Windows, run these commands in PowerShell.
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/semester-demo
+.\.venv\Scripts\python.exe scripts/show_demo.py --out results/semester-demo/figures
+```
+
+On Linux, macOS, or WSL, activate your environment and run:
 
 ```bash
-cd ~/projects/Minor_project/canopy-mapping-rover
 source .venv/bin/activate
+python scripts/run_all.py --seed 0 --fast --out results/semester-demo
+python scripts/show_demo.py --out results/semester-demo/figures
 ```
 
-## A. One-time setup on a new laptop
+Rehearse on the presentation laptop. Keep these files open or ready to open:
 
-```bash
-git clone https://github.com/chikolavosaki-sys/canopy-mapping-rover.git
-cd canopy-mapping-rover
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[core,csf,odometry,eval,dev]"   # on Windows without C++ tools, drop csf
-sudo apt-get install -y libusb-1.0-0          # Open3D needs this on WSL
-pytest -q                                     # expect: all tests pass (about 2 min)
-```
-
-The real-forest data is **not** in git. Copy the `data/` folder from Prithvi's
-laptop, or download it again using the URLs in `data/MANIFEST.csv`
-(see `docs/real-data.md`). Without it, everything except the real-forest part works.
-
-## B. Real forest run (once, about 4 minutes; needs `data/`)
-
-```bash
-# 1. track the rover through the real recording and build the map
-canopy-odometry --bag data/raw/treescope/WSF-19/input/cloud3.bag \
-  --topic /velodyne/cloud --out results/real/wsf19
-
-# 2. keep the dense part of the map (the drive +- 20 m)
-python -c "import numpy as np; from canopy.io import crop_box; \
-m=np.load('results/real/wsf19/map.npy'); p=np.load('results/real/wsf19/poses.npy')[:,:3,3]; \
-np.save('results/real/wsf19/map_crop.npy', crop_box(m, p.min(0)-[20,20,5], p.max(0)+[20,20,25]))"
-
-# 3. ground, trees, ladder fuel
-canopy-analyze results/real/wsf19/map_crop.npy --out results/real/wsf19/analysis
-```
-
-Expected: step 1 prints `"frames": 92`, path about 8.6 m; step 3 prints
-`"n_stems": 5` and `"ladder_cells_above_0_5": 333`.
-
-## C. Prepare all slide images (one day before, about 5 minutes)
-
-```bash
-bash presentation/prepare.sh
-explorer.exe "$(wslpath -w presentation/images)"    # opens the folder in Windows
-```
-
-It re-runs the synthetic demo, redraws all figures, draws the real-forest
-pictures (if section B was done), and copies everything into
-`presentation/images/`:
-
-| Image | Slide |
+| File | What to show |
 |---|---|
-| `sim_lidar_scan.png` | 5, 7 |
-| `sim_odometry.png` | 7 |
-| `real_side_view.png` | 8 |
-| `real_top_views.png` | 1, 9, 13 |
-| `sim_forest_map.png` | 5, 10 |
-| `sim_ladder_fuel.png` | 12 |
-| `real_ladder_fuel.png` | 5, 13 |
+| `results/semester-demo/survey_map.png` | The estimated and reference routes, tree detections, and the ladder-fuel heatmap |
+| `results/semester-demo/trees.csv` | Tree locations and estimated diameters in metres |
+| `results/semester-demo/figures/lidar_scan.png` | One simulated LiDAR scan |
+| `results/semester-demo/figures/odometry.png` | Estimated path and position error along the drive |
+| `results/semester-demo/figures/forest_map.png` | An example simulated navigation run |
+| `presentation/images/real_side_view.png` and `real_top_views.png` | Saved figures from the earlier TreeScope run |
+| `presentation/images/real_ladder_fuel.png` | Saved real-data heatmap |
 
-The numbers for slide 12 are in `results/demo/report.md`; for slide 13 in
-`docs/real-data.md`. If you re-ran anything, re-check them against the slides.
+The quick demo runs four navigation trials. To reproduce the 80-trial benchmark
+in [the outcomes document](../docs/OUTCOMES.md), omit `--fast` and choose a
+separate output folder, such as `results/semester-benchmark`.
 
-## D. Live demo (during the presentation, 1-2 minutes)
+## B. Optional real-forest rerun before the presentation
 
-Open the terminal **before** you start presenting, activate the environment,
-and run each command once beforehand so files are cached.
+Check for the WSF-19 bag in PowerShell before attempting a rerun.
 
-**1. The simulated forest in 3-D** (window opens in about 15 s):
-```bash
-python scripts/show_demo.py --view 3d
+```powershell
+Test-Path -LiteralPath 'data/raw/treescope/WSF-19/input/cloud3.bag' -PathType Leaf
 ```
-Say: "Each dot is one laser hit: blue trunks, orange shrubs, green rocks, grey
-ground. The blue line is the rover's true path, the orange one what odometry
-estimated." Drag to rotate, scroll to zoom, press `Q` to close.
 
-**2. The real forest, only the understorey layer (0.3-4 m)**:
-```bash
-LIBGL_ALWAYS_SOFTWARE=1 python - <<'PY'
-import numpy as np, open3d as o3d, matplotlib.pyplot as plt
-p = np.load("results/real/wsf19/analysis/normalised_cloud.npy")
-under = p[(p[:, 2] > 0.3) & (p[:, 2] < 4.0)]
-pc = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(under))
-pc.colors = o3d.utility.Vector3dVector(plt.cm.viridis(under[:, 2] / 4.0)[:, :3])
-o3d.visualization.draw_geometries([pc], window_name="Real forest: understorey 0.3-4 m")
-PY
+When it prints `False`, show the checked-in TreeScope figures during the
+presentation. The raw recording is available separately through the
+[real-data instructions](../docs/real-data.md).
+
+When it prints `True`, you can rerun the processing ahead of time in PowerShell.
+
+```powershell
+.\.venv\Scripts\canopy-odometry.exe --bag data/raw/treescope/WSF-19/input/cloud3.bag --topic /velodyne/cloud --out results/real/wsf19-rehearsal
 ```
-Say: "This is the real forest with everything above 4 m removed: the columns are
-trunks and the clumps are shrubs and low branches, the ladder fuel."
 
-**3. (Only if there is time) run the analytics live on the real map** (about 1 min):
-```bash
-canopy-analyze results/real/wsf19/map_crop.npy --out /tmp/live_demo
+After that command succeeds, crop the map and run analytics.
+
+```powershell
+.\.venv\Scripts\python.exe -c "import numpy as np; from canopy.io import crop_box; root='results/real/wsf19-rehearsal'; m=np.load(root+'/map.npy'); p=np.load(root+'/poses.npy')[:,:3,3]; np.save(root+'/map_crop.npy', crop_box(m, p.min(0)-[20,20,5], p.max(0)+[20,20,25]))"
+.\.venv\Scripts\canopy-analyze.exe results/real/wsf19-rehearsal/map_crop.npy --out results/real/wsf19-rehearsal/analysis
 ```
-Say: "This is the same command used for the results slide; it finds the ground,
-the trees and the ladder-fuel map from 2.7 million points."
 
-## E. If something fails
+The published TreeScope figures and numbers are from an earlier run.
+Use that run's [documented settings and results](../docs/real-data.md) when
+comparing a fresh run.
 
-| Problem | What to do |
-|---|---|
-| 3-D window does not open, or `libEGL` / `MESA` warnings and nothing appears | Add `LIBGL_ALWAYS_SOFTWARE=1 ` in front of the command. If it still fails, show the pictures in the slides instead (they are the same data). |
-| `ModuleNotFoundError: canopy` | You forgot `source .venv/bin/activate`, or you are not in the repo folder. |
-| `ImportError: libusb-1.0.so.0` | `sudo apt-get install -y libusb-1.0-0` |
-| `No such file ... cloud3.bag` or `normalised_cloud.npy` | The `data/` folder or section B is missing on this laptop: use the pictures. |
-| A command takes too long | Press `Ctrl+C` and continue with the slides. Never wait on stage. |
+## C. Live walkthrough
 
-## F. Checks you can show if asked "does the code really work?"
+1. Open the rehearsed survey map. The solid line shows the simulator's route,
+   the dashed line shows the LiDAR estimate, and the blue crosses mark
+   detected tree centres.
+2. If there is time, rerun the first command in section A. Open `trees.csv`
+   or `summary.json` and point out the six matched trees and the four quick
+   navigation trials.
+3. Show the saved TreeScope figures when discussing the real recording.
+   Use the [outcomes document](../docs/OUTCOMES.md) for the full simulated
+   benchmark and the [real-data notes](../docs/real-data.md) for TreeScope.
+
+Keep the PNGs ready for the live walkthrough. The optional `--view 3d` window
+uses OpenGL. If it fails to launch or exits with an error, the command creates
+PNG figures. Rehearse the window on the exact laptop before using it live.
+
+## D. Standalone odometry
+
+With the environment activated, run:
 
 ```bash
-pytest -q          # 63 automatic tests (about 2 min); also run on GitHub on every push
-ruff check .       # code style check
-gh run list --limit 3   # green CI runs on GitHub (needs the gh CLI logged in)
+canopy-odometry --synthetic 0 --out results/odom-synthetic
+canopy-odometry --synthetic 0 --odometry all-returns --out results/odom-synthetic-baseline
 ```
+
+The default synthetic command uses the same forest and ground-filtered
+alignment as the full demo. Compare `odometry_drift_percent` in the two
+`summary.json` files. The TreeScope and NPY input commands use all valid
+returns for alignment.

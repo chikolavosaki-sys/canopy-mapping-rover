@@ -53,3 +53,16 @@ def test_collision_uses_trunk_and_rock_geometry() -> None:
     assert not collides(np.array([0.6, 0.0]), forest, rover_radius=0.35)
     assert collides(np.array([5.7, 0.0]), forest, rover_radius=0.35)  # sqrt(.5^2-.3^2) = 0.4
     assert not collides(np.array([8.0, 0.0]), forest, rover_radius=0.35)  # lower than clearance
+
+
+def test_rover_turns_to_face_a_nearby_goal_and_counts_the_final_step() -> None:
+    """A goal behind the rover is reachable even when the last step exhausts the budget."""
+    forest = _forest_with_tree_at(5.0, 5.0)
+    start = np.eye(4)
+    start[:2, 3] = (2.0, 5.0)
+    align = run_rover(forest, start, np.array([1.25, 5.0]), Controller(), max_steps=20)
+    assert align.reached_goal
+    assert align.path_length <= 0.75
+
+    final_step = run_rover(forest, start, np.array([2.5, 5.0]), Controller(), max_steps=1)
+    assert final_step.reached_goal and not final_step.timed_out

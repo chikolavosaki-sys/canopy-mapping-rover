@@ -2,25 +2,36 @@
 
     python scripts/show_demo.py            # write PNG figures to results/demo/figures/
     python scripts/show_demo.py --view 3d  # interactive Open3D window (needs a display)
-    python scripts/show_demo.py --nav-seed 2000  # the one time-out: rover loops near the goal
+    python scripts/show_demo.py --nav-seed 2000  # inspect a specific navigation scenario
 
 Colours: trunks, shrubs and rocks get the three categorical colours; ground
 and crowns are grey context; paths are drawn in dark ink.
 """
 
 import argparse
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
 
-from canopy.config import load_config
 from canopy.evaluation.nav_eval import start_and_goal
 from canopy.evaluation.odometry_eval import relative_to_first
 from canopy.lidar_odometry import run_kiss_icp, transform_points
 from canopy.navigation import Controller
-from canopy.simulation.lidar import scan_with_labels, simulate_traversal
+from canopy.simulation.lidar import (
+    OdometryMode,
+    mapping_frames,
+    scan_with_labels,
+    simulate_traversal,
+)
 from canopy.simulation.rover_sim import run_rover
-from canopy.simulation.synthetic_forest import Forest, make_forest, traversal_poses
+from canopy.simulation.synthetic_forest import (
+    Forest,
+    make_demo_forest,
+    make_forest,
+    traversal_poses,
+)
 
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
 COLOURS = {  # reference palette slots 1-3; ground/crown are neutral context
@@ -36,20 +47,20 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0, help="demo forest seed")
     parser.add_argument("--nav-seed", type=int, default=2006, help="navigation forest seed")
     parser.add_argument("--view", choices=("png", "3d"), default="png")
+    parser.add_argument("--viewer-worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--out", type=Path, default=Path("results/demo/figures"))
-    args = parser.parse_args()
-    config = load_config()
-    demo = config["demo"]
-    forest = make_forest(
-        args.seed, demo["plot_size_m"], demo["tree_count"], demo["points_per_tree"]
+    parser.add_argument(
+        "--odometry", choices=("ground-filtered", "all-returns"), default="ground-filtered",
+        help="choose which simulated LiDAR returns are used to estimate motion",
     )
-    truth, estimated, scans = _odometry(forest)
-    if args.view == "3d":
-        try:
-            _show_3d(forest, truth, estimated, scans)
-            return
-        except Exception as exc:
-            print(f"Interactive 3D view unavailable ({exc}). Generating 2D PNG figures instead.")
+    args = parser.parse_args()
+    if not args.viewer_worker and args.view == "3d" and _launch_viewer(args.seed, args.odometry):
+        return
+    forest = make_demo_forest(args.seed)
+    truth, estimated, scans = _odometry(forest, args.odometry)
+    if args.viewer_worker:
+        _show_3d(forest, truth, estimated, scans)
+        return
     nav_forest = make_forest(args.nav_seed, 30.0, 40)
     start, goal = start_and_goal(nav_forest)
     drive = run_rover(nav_forest, start, goal, Controller())
@@ -60,12 +71,30 @@ def main() -> None:
     print(f"Wrote forest_map.png, lidar_scan.png, odometry.png to {args.out}/")
 
 
-def _odometry(forest: Forest) -> tuple[list, list, list]:
+def _launch_viewer(seed: int, mode: OdometryMode) -> bool:
+    """Isolate Open3D window creation so a native viewer crash can fall back to PNGs."""
+    command = [
+        sys.executable, str(Path(__file__).resolve()), "--viewer-worker",
+        "--seed", str(seed), "--odometry", mode,
+    ]
+    try:
+        result = subprocess.run(command, check=False)
+    except OSError as error:
+        print(f"Could not start the 3D viewer ({error}). Generating PNG figures.")
+        return False
+    if result.returncode:
+        print(f"3D viewer exited with code {result.returncode}. Generating PNG figures.")
+    return result.returncode == 0
+
+
+def _odometry(forest: Forest, mode: OdometryMode) -> tuple[list, list, list]:
     """Simulate the demo drive and run KISS-ICP; poses are relative to the first."""
     sequence = simulate_traversal(forest, traversal_poses(forest), sensor_frame=True)
     truth = relative_to_first([pose for pose, _ in sequence])
     scans = [scan for _, scan in sequence]
-    return truth, run_kiss_icp(scans), scans
+    frames, used_mode = mapping_frames(scans, mode)
+    print(f"LiDAR alignment returns: {used_mode}")
+    return truth, run_kiss_icp(frames), scans
 
 
 def _style(axis, title: str) -> None:
@@ -198,8 +227,16 @@ def _show_3d(forest: Forest, truth: list, estimated: list, scans: list) -> None:
         )
         line.paint_uniform_color(_rgb(colour))
         geometries.append(line)
-    print("Blue line = true path, orange = KISS-ICP. Drag to rotate, scroll to zoom, Q to quit.")
-    o3d.visualization.draw_geometries(geometries, window_name="Canopy rover simulator")
+    viewer = o3d.visualization.Visualizer()
+    if not viewer.create_window(window_name="Canopy rover simulator"):
+        raise RuntimeError("Open3D could not open a display")
+    try:
+        for geometry in geometries:
+            viewer.add_geometry(geometry)
+        print("Blue shows the true path and orange shows KISS-ICP. Press Q to quit.")
+        viewer.run()
+    finally:
+        viewer.destroy_window()
 
 
 def _rgb(hex_colour: str) -> list[float]:

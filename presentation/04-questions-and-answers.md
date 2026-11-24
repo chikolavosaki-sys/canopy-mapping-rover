@@ -74,6 +74,43 @@ obstacle. When the simulated rover moves uphill, the obstacle's XY changes
 relative to the rover and its ground clearance stays the same. A physical
 rover would need to account for pitch, roll, and terrain estimation errors.
 
+## About machine learning
+
+**Q: Where is the machine learning in this project?**
+A supervised Random Forest classifier (scikit-learn) labels every LiDAR point as
+ground, trunk, shrub, crown or rock (`src/canopy/ml/`). Tree detection also uses
+DBSCAN, an unsupervised clustering algorithm.
+
+**Q: What are the features?**
+Eight numbers per point, from its 20 nearest neighbours: height above ground,
+linearity (on a line, like a trunk edge), planarity (flat, like ground),
+scattering (spread out, like leaves), verticality, the direction of the main
+spread, the height spread, and how far the neighbours are (density).
+
+**Q: Where did the training labels come from?**
+From our simulator: we build the forest, so we know what every laser ray hit.
+That gave about 93,000 labelled training points from 8 forests without any manual
+labelling.
+
+**Q: How did you make sure the accuracy is honest?**
+We tested on 4 different forests the model never saw during training (41,429
+points): 89.2 % accuracy. We also tested on real labelled frames from TreeScope.
+
+**Q: Why Random Forest and not deep learning?**
+Our features are a small table of numbers, where Random Forests work very well.
+It trains in seconds on a laptop without a GPU and shows which features it used.
+Deep learning (for example PointNet++) needs much more labelled real data and a GPU.
+
+**Q: Why is it worse on real data (ground 60 %, trunk 35 %)?**
+The model learned only from our simulated forest. Real ground is rougher (often
+called "rock"), and real trunks are 20+ m tall while in simulation the LiDAR mostly
+saw the lower part, so upper trunk points look like "crown" to the model. This is
+the sim-to-real gap; training or fine-tuning on real labelled data is the next step.
+
+**Q: Which classes are confused most?**
+Shrub and trunk (23 % of shrub points predicted as trunk), because both occur at
+1-4 m height and both can look upright locally.
+
 ## About testing and results
 
 **Q: Is there a real rover?**

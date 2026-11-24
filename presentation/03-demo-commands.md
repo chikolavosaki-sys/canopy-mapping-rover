@@ -25,13 +25,18 @@ Rehearse on the presentation laptop. Keep these files open or ready to open:
 
 | File | What to show |
 |---|---|
-| `results/semester-demo/survey_map.png` | The estimated and reference routes, tree detections, and the ladder-fuel heatmap |
-| `results/semester-demo/trees.csv` | Tree locations and estimated diameters in metres |
-| `results/semester-demo/figures/lidar_scan.png` | One simulated LiDAR scan |
-| `results/semester-demo/figures/odometry.png` | Estimated path and position error along the drive |
-| `results/semester-demo/figures/forest_map.png` | An example simulated navigation run |
-| `presentation/images/real_side_view.png` and `real_top_views.png` | Saved figures from the earlier TreeScope run |
-| `presentation/images/real_ladder_fuel.png` | Saved real-data heatmap |
+| File | What to show | Slide |
+|---|---|---|
+| `results/semester-demo/survey_map.png` | Estimated and reference routes, tree detections, and ladder-fuel heatmap | 13, 15 |
+| `results/semester-demo/trees.csv` | Tree locations and estimated diameters in metres | 13 |
+| `results/semester-demo/figures/lidar_scan.png` | One simulated LiDAR scan | 5, 7 |
+| `results/semester-demo/figures/odometry.png` | Estimated path and position error along the drive | 7 |
+| `results/semester-demo/figures/forest_map.png` | Example simulated navigation run | 5, 10 |
+| `presentation/images/real_side_view.png` and `real_top_views.png` | Saved figures from the earlier TreeScope run | 1, 8, 9, 14 |
+| `presentation/images/real_ladder_fuel.png` | Saved real-data heatmap | 5, 14 |
+| `presentation/images/ml_confusion_matrix.png` | Random Forest confusion matrix (89.5% accuracy) | 11 |
+| `presentation/images/ml_feature_importance.png` | Feature importance ranking | 11 |
+| `presentation/images/ml_real_side_view.png` | Real forest coloured by ML predictions | 14 (optional) |
 
 The quick demo runs four navigation trials. To reproduce the 80-trial benchmark
 in [the outcomes document](../docs/OUTCOMES.md), omit `--fast` and choose a
@@ -39,7 +44,8 @@ separate output folder, such as `results/semester-benchmark`.
 
 ## B. Optional real-forest rerun before the presentation
 
-Check for the WSF-19 bag in PowerShell before attempting a rerun.
+On Linux/WSL, `bash presentation/live_demo.sh` runs through interactive steps; see `05-presentation-day.md`.
+On Windows or if running manually, check for the WSF-19 bag in PowerShell before attempting a rerun:
 
 ```powershell
 Test-Path -LiteralPath 'data/raw/treescope/WSF-19/input/cloud3.bag' -PathType Leaf

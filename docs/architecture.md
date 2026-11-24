@@ -76,9 +76,11 @@ into triangle meshes and ray-casts a VLP-16-like scan with Open3D's
 `RaycastingScene` (true occlusion, range noise, a label per point).
 
 Phase 4 adds simulator-only navigation. Each step the rover scans from a
-LiDAR 0.6 m above its base. The navigation sensor uses 26 beams over 50 degrees
-to observe nearby low obstacles on slopes. Each scan estimates a ground plane
-(`navigation.terrain`, RANSAC), and remembers obstacle points from the last
+LiDAR 0.6 m above its base. Navigation uses 26 beams over 50 degrees to observe
+nearby low obstacles on slopes. The mapping sensor uses 16 beams over 30 degrees.
+Both profiles retain about two degrees of vertical spacing. See the
+[sensor design decision](decisions.md) for the motivation. Each navigation
+scan estimates a ground plane (`navigation.terrain`, RANSAC) and remembers obstacle points from the last
 8 scans (`navigation.memory`) to cover the LiDAR's close-range blind zone; `navigation.sectors` turns the rover-frame points
 into 9 forward sector distances, a rover-wide corridor clearance, and a
 footprint clearance. `navigation.controller` is a FORWARD / TURN_LEFT /

@@ -49,7 +49,7 @@ then runs the step when you press **Enter**:
 | 1 | Simulated forest in a 3-D window (drag to rotate, scroll to zoom, `Q` to close) | ~15 s | "Each dot is one laser hit: blue trunks, orange shrubs, green rocks. The blue line is the true path, the orange line what odometry estimated." |
 | 2 | Real forest, only the 0.3-4 m layer, in 3-D | ~10 s | "This is the real forest with everything above 4 m removed: columns are trunks, clumps are shrubs. That is the ladder fuel a drone cannot see." |
 | 3 | The whole pipeline runs live (quick mode), then the results table | ~30-60 s | "Drive, odometry, map, ground, trees, ladder fuel and navigation: all from one command." |
-| 4 | ML report and the confusion matrix picture | ~5 s | "The Random Forest was trained on 8 forests and tested on 4 new ones: 89 % accuracy. The diagonal shows correct predictions." |
+| 4 | ML report and the confusion matrix picture | ~5 s | "The Random Forest was trained on 8 forests and got 89.2% accuracy on 4 unseen forests. The diagonal shows correct predictions." |
 | 5 | Green test runs on GitHub | ~3 s | "Every change runs 67 automatic tests." |
 
 During step 3 the screen stays quiet while it works, so keep talking.

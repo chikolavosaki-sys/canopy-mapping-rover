@@ -36,7 +36,19 @@ On Windows, run these commands from PowerShell in the project folder.
 
 ```powershell
 python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[core,csf,odometry,eval,ml,dev]"
+```
+
+If CSF fails to build on Windows, install the other extras and use the built-in
+RANSAC ground classifier.
+
+```powershell
 .\.venv\Scripts\python.exe -m pip install -e ".[core,odometry,eval,ml,dev]"
+```
+
+Once the dependencies are installed, run the demo and tests.
+
+```powershell
 .\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/semester-demo
 .\.venv\Scripts\python.exe -m pytest -q
 ```
@@ -52,12 +64,12 @@ On macOS or Linux, use the following commands.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-python -m pip install -e ".[core,odometry,eval,ml,dev]"
+python -m pip install -e ".[core,csf,odometry,eval,ml,dev]"
 pytest -q && ruff check .
 python scripts/run_all.py --seed 0 --fast --out results/semester-demo
 python scripts/show_demo.py                 # figures in results/demo/figures/
 python scripts/show_demo.py --view 3d       # rotate the scanned forest in a 3-D window
-python scripts/train_point_classifier.py    # train and evaluate the point classifier
+python scripts/train_point_classifier.py --out results/ml-rehearsal
 ```
 
 The demo estimates motion with ground-filtered LiDAR returns by default.

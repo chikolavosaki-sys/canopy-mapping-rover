@@ -37,7 +37,7 @@ python scripts/run_all.py --seed 0 --fast --out /tmp/live_demo
 sed -n '/## Forest analytics/,/## Navigation/p' /tmp/live_demo/report.md
 
 step 4 "Machine learning result (already trained; opens the confusion matrix)" \
-  "The Random Forest was trained on 8 simulated forests and tested on 4 unseen ones: 89 % accuracy. The diagonal shows correct predictions."
+  "The Random Forest was trained on 8 simulated forests and got 89.2% accuracy on 4 unseen forests. The diagonal shows correct predictions."
 sed -n '/Accuracy/,/rock |/p' results/ml/report.md
 explorer.exe "$(wslpath -w results/ml/confusion_matrix.png)" 2>/dev/null || true
 

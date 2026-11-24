@@ -73,10 +73,19 @@ def test_update_outcomes_replaces_only_the_marked_block(tmp_path) -> None:
         "map_dbh_rmse_m", "map_ladder_auc", "navigation_success", "exact_tree_recall",
         "exact_dbh_rmse_m", "ground_precision", "ground_recall",
     )
-    summary = {key: 0.5 for key in keys} | {"navigation_collisions": 0, "navigation_runs": 80}
+    summary = {key: 0.5 for key in keys} | {
+        "ground_method": "ransac",
+        "navigation_seed_start": 3003,
+        "navigation_seed_end": 3022,
+        "navigation_collisions": 0,
+        "navigation_runs": 80,
+        "navigation_timeouts": 1,
+    }
 
     update_outcomes(summary, 3, doc)
     text = doc.read_text()
 
     assert text.startswith("before\n") and text.endswith(f"{MARKERS[1]}\nafter\n")
     assert "old table" not in text and "Seed 3." in text and "| 0.5000 |" in text
+    assert "Ground classification used RANSAC." in text
+    assert "Navigation seeds 3003-3022." in text

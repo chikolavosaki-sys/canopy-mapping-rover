@@ -63,6 +63,7 @@ def run_demo(
     forest = make_demo_forest(seed)
     mapping = map_with_odometry(forest, odometry_mode)
     summary = dict(mapping.metrics)
+    summary["ground_method"] = resolve_method()
     map_metrics, map_trees, ladder = analyse(mapping.cloud, forest)
     exact_metrics, _, _ = analyse(mapping.exact_cloud, forest)
     cloud_metrics, _, _ = analyse(forest.points, forest)
@@ -81,6 +82,8 @@ def run_demo(
     overall = summarise(
         evaluate_navigation(seeds, tree_counts=tree_counts, out_dir=out_dir / "navigation")
     )[-1]
+    summary["navigation_seed_start"] = seeds.start
+    summary["navigation_seed_end"] = seeds.stop - 1
     summary["navigation_runs"] = overall["runs"]
     summary["navigation_success"] = overall["success_rate"]
     summary["navigation_collisions"] = overall["collisions"]
@@ -271,7 +274,7 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
     ]
     lines += [
         "",
-        f"Ground classification ({resolve_method()}) on the labelled demo scans: "
+        f"Ground classification ({summary['ground_method']}) on the labelled demo scans: "
         f"precision {summary['ground_precision']:.3f} (rocks excluded), "
         f"recall {summary['ground_recall']:.3f}.",
         "",
@@ -281,6 +284,7 @@ def _write_report(summary: Summary, seed: int, path: Path) -> None:
         "",
         "| Metric | Value |",
         "|---|---:|",
+        f"| Seed range | {summary['navigation_seed_start']}-{summary['navigation_seed_end']} |",
         f"| Runs (seeds x forest densities) | {summary['navigation_runs']} |",
         f"| Success rate | {summary['navigation_success']:.3f} |",
         f"| Collisions | {summary['navigation_collisions']} |",
@@ -310,8 +314,15 @@ def update_outcomes(summary: Summary, seed: int, path: Path = OUTCOMES) -> None:
         ("Navigation runs", summary["navigation_runs"], ">= 50"),
         ("Navigation success rate", summary["navigation_success"], ">= 0.90"),
         ("Navigation collisions", summary["navigation_collisions"], "0"),
+        ("Navigation timeouts", summary["navigation_timeouts"], "-"),
     ]
-    table = [f"Seed {seed}.", "", "| Metric | Value | Target |", "|---|---:|---:|"]
+    table = [
+        f"Seed {seed}. Ground classification used {str(summary['ground_method']).upper()}.",
+        f"Navigation seeds {summary['navigation_seed_start']}-{summary['navigation_seed_end']}.",
+        "",
+        "| Metric | Value | Target |",
+        "|---|---:|---:|",
+    ]
     table += [f"| {label} | {_fmt(value)} | {target} |" for label, value, target in rows]
     block = MARKERS[0] + "\n" + "\n".join(table) + "\n"
     path.write_text(text[:start] + block + text[end:], encoding="utf-8")

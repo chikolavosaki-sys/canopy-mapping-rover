@@ -124,11 +124,15 @@ cd ~/projects/canopy-mapping-rover && source .venv/bin/activate
 | D1. Automatic tests (~2 min) | `pytest -q` | Ends with `passed` (67 tests; a few "skipped" are fine) |
 | D2. Synthetic demo (~2 min) | `python scripts/run_all.py --seed 0 && cat results/demo/report.md` | Exact-pose map: Trees detected **6**, recall **1.0000** |
 | D3. Figures (~15 s) | `python scripts/show_demo.py` | `Wrote forest_map.png, lidar_scan.png, odometry.png` |
-| D4. ML model (~2 min) | `python scripts/train_point_classifier.py` | `Accuracy on unseen forests: ~89 %` |
+| D4. ML model (~2 min) | `python scripts/train_point_classifier.py --out results/ml-rehearsal` | Writes a new report and figures without replacing the saved benchmark |
 | D5. Real forest: odometry (~3 min, needs Part C) | block below | `"frames": 92`, `path_length_m` about 8.6 |
 | D6. Real forest: analytics (~1 min) | block below | `"n_stems": 5`, `"ladder_cells_above_0_5": 333` |
 | D7. All slide images (~5 min) | `bash presentation/prepare.sh` | Lists the images in `presentation/images/` |
 | D8. 3-D view | `python scripts/show_demo.py --view 3d` | A window opens; drag to rotate, `Q` closes |
+
+The [saved ML benchmark](../results/ml/report.md) reports 89.2% accuracy on
+unseen simulated forests and includes the TreeScope check. A local rerun skips
+the TreeScope check when the labelled frames are absent.
 
 **D5 and D6, real forest:**
 

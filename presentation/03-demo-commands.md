@@ -34,13 +34,14 @@ Rehearse on the presentation laptop. Keep these files open or ready to open:
 | `results/semester-demo/figures/forest_map.png` | Example simulated navigation run | 5, 10 |
 | `presentation/images/real_side_view.png` and `real_top_views.png` | Saved figures from the earlier TreeScope run | 1, 8, 9, 14 |
 | `presentation/images/real_ladder_fuel.png` | Saved real-data heatmap | 5, 14 |
-| `presentation/images/ml_confusion_matrix.png` | Random Forest confusion matrix (89.5% accuracy) | 11 |
+| `presentation/images/ml_confusion_matrix.png` | Random Forest confusion matrix (89.2% accuracy) | 11 |
 | `presentation/images/ml_feature_importance.png` | Feature importance ranking | 11 |
 | `presentation/images/ml_real_side_view.png` | Real forest coloured by ML predictions | 14 (optional) |
 
-The quick demo runs four navigation trials. To reproduce the 80-trial benchmark
-in [the outcomes document](../docs/OUTCOMES.md), omit `--fast` and choose a
-separate output folder, such as `results/semester-benchmark`.
+The quick demo runs four navigation trials. To reproduce the full benchmark
+on seeds 3000–3019 in [the outcomes document](../docs/OUTCOMES.md), omit
+`--fast` and choose a separate output folder, such as
+`results/semester-benchmark`.
 
 ## B. Optional real-forest rerun before the presentation
 

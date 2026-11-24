@@ -82,8 +82,8 @@ Trunks are removed first, because a trunk is continuous but is not fuel.
 | Trees from the LiDAR-estimated map | 6 of 6 matched, 1.81 cm DBH RMSE | The map supports trunk locations and diameter estimates on this plot |
 | Trees on five more simulated forests | 83% mean recall | Tree detection varied between forests |
 | Ladder-fuel map vs true shrubs | AUC about 0.97 on the demo forest | Shrub cells usually ranked higher |
-| Navigation | 80 of 80 regression scenarios reached the goal, zero collisions and timeouts | A repeatable obstacle-avoidance check across four forest densities |
-| ML point classifier, unseen simulated forests | 89.5% accuracy (ground 99%, rock 90%, crown 93%, stem 85%, shrub 80%) | Learns the classes well from simulated examples |
+| Navigation on fresh seeds 3000–3019 | 79 of 80 reached the goal (98.75%), one collision, zero timeouts | A held-out check across four forest densities |
+| ML point classifier, unseen simulated forests | 89.2% accuracy | Accuracy on four forests held out from training |
 | Earlier real forest run (WSF-19) | 2.7 million-point map, 2,016 ladder-fuel cells and five detected stems | Tree-by-tree matches with the field survey are pending |
 
 See the [simulated benchmark](../docs/OUTCOMES.md) and

@@ -11,7 +11,7 @@ write the code. Read the files in this order:
 | [`04-questions-and-answers.md`](04-questions-and-answers.md) | Questions examiners are likely to ask, with honest answers |
 | [`05-presentation-day.md`](05-presentation-day.md) | **Presentation day checklist:** what to run, when, and what to say |
 | `live_demo.sh` | The live demo: press Enter for each step; it shows what to say |
-| `prepare.sh` | One command that regenerates all results and copies slide images into `images/` |
+| `prepare.sh` | Regenerates mapping figures and copies the saved ML benchmark figures into `images/` |
 | `make_slide_images.py` | Draws the real-forest pictures (used by `prepare.sh`) |
 | `images/` | All pictures for the slides (after running `prepare.sh`) |
 

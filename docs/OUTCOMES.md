@@ -45,10 +45,20 @@ to 83%. Four of the five met the drift target and three met the recall target.
 These runs used the RANSAC ground classifier. The original all-returns run
 is available in [the original demo results](../results/demo/report.md).
 
-### Seed 0 and navigation regression benchmark
+### Seed 0 mapping and held-out navigation benchmark
+
+The updated navigation configuration reached the goal in 80 of 80 runs when
+we replayed seeds 2000–2019 across four densities. Those scenarios helped
+diagnose failures. The table below reports the independent run on seeds
+3000–3019 with the configuration fixed before testing.
+
+The held-out run reached 79 of 80 goals (98.75%). The collision occurred on
+seed 3014 with 40 trees, so the zero-collision target is still open. All
+other runs reached the goal and there were no timeouts.
 
 <!-- demo-results:start -->
-Seed 0.
+Seed 0. Ground classification used RANSAC.
+Navigation seeds 3000-3019.
 
 | Metric | Value | Target |
 |---|---:|---:|
@@ -60,10 +70,11 @@ Seed 0.
 | DBH RMSE (m), scanned map | 0.0181 | <= 0.03 |
 | DBH RMSE (m), exact-pose map | 0.0047 | <= 0.03 |
 | Ground precision (rocks excluded) / recall | 0.994 / 0.995 | - |
-| Ladder AUC vs shrub cells, scanned map | 0.9656 | >= 0.75 |
+| Ladder AUC vs shrub cells, scanned map | 0.9658 | >= 0.75 |
 | Navigation runs | 80 | >= 50 |
-| Navigation success rate | 1.0000 | >= 0.90 |
-| Navigation collisions | 0 | 0 |
+| Navigation success rate | 0.9875 | >= 0.90 |
+| Navigation collisions | 1 | 0 |
+| Navigation timeouts | 0 | - |
 <!-- demo-results:end -->
 
 ## Honest limits
@@ -79,8 +90,8 @@ Seed 0.
   sparse or weakly structured scans can still yield unreliable alignment.
   The ground-filtered method needs separate testing on recorded data.
 - Small boulders may be hidden by terrain or fall below useful LiDAR
-  coverage in some poses. The navigation benchmark reuses the 80 scenarios
-  from the original run to measure changes against that baseline.
+  coverage in some poses. The navigation results apply to the
+  [wider simulated navigation sensor](decisions.md) and the sampled forests.
 - CSF's cloth drapes over low boulders, so rock points are often classed as
   ground (ground precision is reported with rocks excluded).
 - Simulated foliage is flat triangles and trunks are perfect cylinders; real

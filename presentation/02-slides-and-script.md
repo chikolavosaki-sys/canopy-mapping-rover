@@ -144,7 +144,7 @@ LiDAR point as ground, trunk, shrub, crown or rock. For each point we describe t
 shape of its 20 nearest neighbours: points on a line are probably a trunk, a flat
 sheet is ground, scattered points are leaves. Because we generate the forests, we
 get the correct label of every point for free, so we trained on 8 forests and
-tested on 4 forests the model had never seen: 89 % of points were classified
+tested on 4 forests the model had never seen: 89.2% of points were classified
 correctly. Ground and rocks are almost perfect; the main confusion is shrub versus
 trunk, because both stand between 1 and 4 m."
 
@@ -171,14 +171,15 @@ the same pipeline on a real public forest recording from the TreeScope project."
 | Final odometry drift | 0.85% over a 10.67 m route |
 | Trees matched on the LiDAR-estimated map | 6 of 6, DBH RMSE 1.81 cm |
 | Ladder-fuel score vs simulated shrub locations | AUC about 0.97 |
-| Navigation regression benchmark | 80 of 80 reached the goal, zero collisions and timeouts |
+| Navigation on held-out seeds 3000–3019 | 79 of 80 reached the goal (98.75%), one collision, zero timeouts |
 
 Use `results/semester-demo/survey_map.png` alongside the table.
 
 **Say** "On the demo forest, the LiDAR-estimated route ended about nine
 centimetres from the simulator's endpoint. The map matched all six trees,
-with a trunk-diameter error of about 1.8 centimetres. The rover reached its
-goal in all 80 scenarios we reran for the navigation benchmark."
+with a trunk-diameter error of about 1.8 centimetres. In 80 new navigation
+scenarios, the rover reached its goal 79 times, with one collision and
+zero timeouts."
 
 ---
 
@@ -220,7 +221,7 @@ detected trees. The heatmap shows the ladder-fuel score."
   83% across five additional simulated forests
 - The earlier TreeScope run detected five stems; the dataset lists 63
   labelled trees and tree-by-tree matching is pending
-- ML model trained on simulated forests: 89.5% accurate on unseen synthetic
+- ML model trained on simulated forests: 89.2% accurate on unseen synthetic
   forests, but lower on real labels (sim-to-real gap)
 - Simulated rover only; no physical hardware
 - Ladder fuel is a proxy, validated against shrub positions

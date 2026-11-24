@@ -127,8 +127,8 @@ a survey. Then we checked on real data.
 On the seed 0 LiDAR-estimated map, we matched all six trees and measured
 trunk diameter with 1.81 cm RMSE. Mean tree recall was 83% over five other
 simulated forests. Ladder-fuel score versus shrub locations had an AUC of
-about 0.97 on the demo forest. The rover reached its goal in all 80 navigation
-regression scenarios, with zero collisions and timeouts.
+about 0.97 on the demo forest. On held-out navigation seeds 3000–3019, the
+rover reached 79 of 80 goals (98.75%), with one collision and zero timeouts.
 
 **Q: What do the five detected stems and 63 labels mean on real data?**
 The earlier TreeScope run detected five stems in the processed point cloud.
@@ -149,8 +149,9 @@ the shrub square higher 97 % of the time. 0.5 would be random guessing.
 The original simulator benchmark had four collisions, mostly with rocks as
 the rover approached them. We widened the simulated navigation scan, added a
 detection margin, and improved how the rover approaches a nearby goal.
-Replaying the same 80 scenarios gave zero collisions and zero timeouts.
-The replay measures regression performance on those scenarios.
+Replaying seeds 2000–2019 gave zero collisions and zero timeouts. On the
+fresh seeds 3000–3019, the rover collided once, on seed 3014 with 40 trees.
+The held-out run measures how the fixed setup performed on new forests.
 
 **Q: How long does it take to run?**
 The quick demo runs four navigation trials. The full benchmark runs 80 and

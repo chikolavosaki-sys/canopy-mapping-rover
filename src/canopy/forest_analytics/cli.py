@@ -17,9 +17,17 @@ def main() -> None:
     parser.add_argument("--config", type=Path, help="YAML settings (default: configs/default.yaml)")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
-    if args.config:
-        # Must happen before canopy modules are imported: they read defaults on import.
+    if args.config is not None:
+        if not args.config.is_file():
+            parser.error(f"--config requires an existing file: {args.config}")
+        # Analytics modules read their defaults when imported.
         os.environ["CANOPY_CONFIG"] = str(args.config.resolve())
-    from .pipeline import analyze_cloud
+    from .pipeline import analyze_and_write, load_cloud
 
-    print(json.dumps(analyze_cloud(args.cloud, args.out), indent=2))
+    try:
+        points = load_cloud(args.cloud)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+
+    summary = analyze_and_write(points, args.out)
+    print(json.dumps(summary, indent=2))

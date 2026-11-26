@@ -339,7 +339,7 @@ def main() -> None:
     """Parse demo arguments and run the synthetic pipeline."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", type=Path, default=Path("results/demo"))
+    parser.add_argument("--out", type=Path, default=Path("results/runs/demo"))
     parser.add_argument(
         "--odometry", choices=("ground-filtered", "all-returns"), default="ground-filtered",
         help="choose which simulated LiDAR returns are used to estimate motion",
@@ -351,6 +351,8 @@ def main() -> None:
         "--update-outcomes", action="store_true", help="rewrite the table in docs/OUTCOMES.md"
     )
     args = parser.parse_args()
+    if args.seed < 0:
+        parser.error("--seed must be non-negative")
     if args.fast and args.update_outcomes:
         parser.error("--fast runs only 4 navigation trials; do not use it with --update-outcomes")
     print(f"Running the synthetic forest survey (seed {args.seed})...", flush=True)

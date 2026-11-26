@@ -2,8 +2,8 @@
 
     python presentation/make_slide_images.py
 
-Needs ``results/real/wsf19/analysis/`` from the commands in
-``presentation/03-demo-commands.md`` (section "Real forest run"). Writes:
+Use ``--analysis`` and ``--out`` for a fresh run under ``results/runs/``.
+See ``presentation/03-demo-commands.md`` for the commands. Writes:
 
 - images/real_top_views.png - the same forest from above: all heights vs only
   0.3-4 m (the understorey / ladder-fuel layer the rover maps)
@@ -11,6 +11,7 @@ Needs ``results/real/wsf19/analysis/`` from the commands in
   shrubs, and the drift "ladders" on some trunks
 """
 
+import argparse
 import csv
 from pathlib import Path
 
@@ -26,21 +27,26 @@ MAX_POINTS = 300_000  # enough for a picture, fast to draw
 
 def main() -> None:
     """Load the real-forest cloud and write both slide images."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--analysis", type=Path, default=ANALYSIS)
+    parser.add_argument("--out", type=Path, default=OUT)
+    args = parser.parse_args()
+
+    cloud_path = args.analysis / "normalised_cloud.npy"
+    if not cloud_path.exists():
+        raise SystemExit(f"{cloud_path} not found: run the real-forest commands first")
     import matplotlib
 
     matplotlib.use("Agg")
-    cloud_path = ANALYSIS / "normalised_cloud.npy"
-    if not cloud_path.exists():
-        raise SystemExit(f"{cloud_path} not found: run the real-forest commands first")
     points = np.load(cloud_path)
     rng = np.random.default_rng(0)
     if len(points) > MAX_POINTS:
         points = points[rng.choice(len(points), MAX_POINTS, replace=False)]
-    stems = _stems(ANALYSIS / "trees.csv")
-    OUT.mkdir(exist_ok=True)
-    _top_views(points, stems, OUT / "real_top_views.png")
-    _side_view(points, OUT / "real_side_view.png")
-    print(f"Wrote real_top_views.png and real_side_view.png to {OUT}")
+    stems = _stems(args.analysis / "trees.csv")
+    args.out.mkdir(parents=True, exist_ok=True)
+    _top_views(points, stems, args.out / "real_top_views.png")
+    _side_view(points, args.out / "real_side_view.png")
+    print(f"Wrote real_top_views.png and real_side_view.png to {args.out}")
 
 
 def _stems(path: Path) -> np.ndarray:

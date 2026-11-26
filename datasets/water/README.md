@@ -1,3 +1,3 @@
-# Water datasets: PAUSED
+# Water dataset candidates
 
-Water datasets are retained for possible weeks 10-12 stretch work, but no water dataset verification or downloads are part of the current scope.
+The project scoped water-body segmentation out of the completed rover pipeline. The [dataset catalogue](../README.md) retains the original candidate sources for future work.

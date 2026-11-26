@@ -1,6 +1,6 @@
 """See the simulator: forest map with a rover drive, one LiDAR scan, and odometry.
 
-    python scripts/show_demo.py            # write PNG figures to results/demo/figures/
+    python scripts/show_demo.py            # write PNG figures to results/runs/demo/figures/
     python scripts/show_demo.py --view 3d  # interactive Open3D window (needs a display)
     python scripts/show_demo.py --nav-seed 2000  # inspect a specific navigation scenario
 
@@ -48,12 +48,14 @@ def main() -> None:
     parser.add_argument("--nav-seed", type=int, default=2006, help="navigation forest seed")
     parser.add_argument("--view", choices=("png", "3d"), default="png")
     parser.add_argument("--viewer-worker", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--out", type=Path, default=Path("results/demo/figures"))
+    parser.add_argument("--out", type=Path, default=Path("results/runs/demo/figures"))
     parser.add_argument(
         "--odometry", choices=("ground-filtered", "all-returns"), default="ground-filtered",
         help="choose which simulated LiDAR returns are used to estimate motion",
     )
     args = parser.parse_args()
+    if args.seed < 0 or args.nav_seed < 0:
+        parser.error("--seed and --nav-seed must be non-negative")
     if not args.viewer_worker and args.view == "3d" and _launch_viewer(args.seed, args.odometry):
         return
     forest = make_demo_forest(args.seed)
@@ -61,6 +63,11 @@ def main() -> None:
     if args.viewer_worker:
         _show_3d(forest, truth, estimated, scans)
         return
+
+    import matplotlib
+
+    # Saving PNGs must work even when the display or its GUI backend failed.
+    matplotlib.use("Agg")
     nav_forest = make_forest(args.nav_seed, 30.0, 40)
     start, goal = start_and_goal(nav_forest)
     drive = run_rover(nav_forest, start, goal, Controller())

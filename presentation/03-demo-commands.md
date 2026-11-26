@@ -1,104 +1,62 @@
-# Demo commands
+# Rehearse the demo
 
-Run these from the project folder after setting up the Python environment in the
-[README](../README.md). The live walkthrough uses only the synthetic forest.
-The saved TreeScope figures are ready to show on a fresh clone.
+Run these commands from the project folder after [setup](../docs/SETUP.md). The rehearsal uses the simulated forest and generates its own outputs. A fresh clone already includes the saved TreeScope and classifier figures.
 
-## A. Prepare and rehearse
+## Generate the survey and figures
 
-On Windows, run these commands in PowerShell.
+**Windows PowerShell**
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/semester-demo
-.\.venv\Scripts\python.exe scripts/show_demo.py --out results/semester-demo/figures
+.\.venv\Scripts\python.exe scripts/run_all.py --seed 0 --fast --out results/runs/demo
+.\.venv\Scripts\python.exe scripts/show_demo.py --out results/runs/demo/figures
 ```
 
-On Linux, macOS, or WSL, activate your environment and run:
+**Bash**
 
 ```bash
-source .venv/bin/activate
-python scripts/run_all.py --seed 0 --fast --out results/semester-demo
-python scripts/show_demo.py --out results/semester-demo/figures
+bash presentation/prepare.sh
 ```
 
-Rehearse on the presentation laptop. Keep these files open or ready to open:
+| File | What to show | Slides |
+| --- | --- | --- |
+| `results/runs/demo/survey_map.png` | Estimated and reference routes, tree detections, and ladder-fuel proxy | 13, 15 |
+| `results/runs/demo/trees.csv` | Tree positions and estimated diameters in metres | 13 |
+| `results/runs/demo/figures/lidar_scan.png` | A simulated LiDAR scan | 5, 7 |
+| `results/runs/demo/figures/odometry.png` | Estimated path and position error | 7 |
+| `results/runs/demo/figures/forest_map.png` | One navigation run in a simulated forest | 5, 10 |
+| [`real_side_view.png`](images/real_side_view.png) and [`real_top_views.png`](images/real_top_views.png) | Saved TreeScope views of the forest and understorey | 1, 8, 9, 14 |
+| [`real_ladder_fuel.png`](images/real_ladder_fuel.png) | The saved TreeScope ladder-fuel heatmap | 5, 14 |
+| [`ml_confusion_matrix.png`](images/ml_confusion_matrix.png) | Random Forest predictions on unseen simulated forests | 11 |
+| [`ml_feature_importance.png`](images/ml_feature_importance.png) | Feature rankings from the Random Forest | 11 |
 
-| File | What to show |
-|---|---|
-| File | What to show | Slide |
-|---|---|---|
-| `results/semester-demo/survey_map.png` | Estimated and reference routes, tree detections, and ladder-fuel heatmap | 13, 15 |
-| `results/semester-demo/trees.csv` | Tree locations and estimated diameters in metres | 13 |
-| `results/semester-demo/figures/lidar_scan.png` | One simulated LiDAR scan | 5, 7 |
-| `results/semester-demo/figures/odometry.png` | Estimated path and position error along the drive | 7 |
-| `results/semester-demo/figures/forest_map.png` | Example simulated navigation run | 5, 10 |
-| `presentation/images/real_side_view.png` and `real_top_views.png` | Saved figures from the earlier TreeScope run | 1, 8, 9, 14 |
-| `presentation/images/real_ladder_fuel.png` | Saved real-data heatmap | 5, 14 |
-| `presentation/images/ml_confusion_matrix.png` | Random Forest confusion matrix (89.2% accuracy) | 11 |
-| `presentation/images/ml_feature_importance.png` | Feature importance ranking | 11 |
-| `presentation/images/ml_real_side_view.png` | Real forest coloured by ML predictions | 14 (optional) |
+The quick demo runs four navigation trials. For the full 80-trial benchmark on seeds 3000–3019, use the command in [outcomes](../docs/OUTCOMES.md#reproduce-the-benchmark).
 
-The quick demo runs four navigation trials. To reproduce the full benchmark
-on seeds 3000–3019 in [the outcomes document](../docs/OUTCOMES.md), omit
-`--fast` and choose a separate output folder, such as
-`results/semester-benchmark`.
+## Walk through the results
 
-## B. Optional real-forest rerun before the presentation
+1. Show the prepared survey map. The solid line is the simulated reference route, the dashed line is the LiDAR estimate, and the blue crosses mark detected trees.
+2. If time allows, rerun the quick survey. Open `trees.csv` or `summary.json` and point out the matched trees and the four navigation trials.
+3. Use the TreeScope figures to illustrate the offline mapping workflow and the [real-data limitations](../docs/real-data.md).
+4. Use the confusion matrix to discuss the synthetic classifier result and the [real-data recall check](../results/ml/report.md#real-data-check-treescope-vat-0723-labelled-frames).
 
-On Linux/WSL, `bash presentation/live_demo.sh` runs through interactive steps; see `05-presentation-day.md`.
-On Windows or if running manually, check for the WSF-19 bag in PowerShell before attempting a rerun:
+With Bash you can run `bash presentation/live_demo.sh` for an interactive walkthrough. For a 3D view on its own, add `--view 3d` to the `show_demo.py` command. The interactive walkthrough points to the saved figures if a viewer fails and continues to the next step.
 
-```powershell
-Test-Path -LiteralPath 'data/raw/treescope/WSF-19/input/cloud3.bag' -PathType Leaf
-```
+## Optional real-data rehearsal
 
-When it prints `False`, show the checked-in TreeScope figures during the
-presentation. The raw recording is available separately through the
-[real-data instructions](../docs/real-data.md).
-
-When it prints `True`, you can rerun the processing ahead of time in PowerShell.
-
-```powershell
-.\.venv\Scripts\canopy-odometry.exe --bag data/raw/treescope/WSF-19/input/cloud3.bag --topic /velodyne/cloud --out results/real/wsf19-rehearsal
-```
-
-After that command succeeds, crop the map and run analytics.
-
-```powershell
-.\.venv\Scripts\python.exe -c "import numpy as np; from canopy.io import crop_box; root='results/real/wsf19-rehearsal'; m=np.load(root+'/map.npy'); p=np.load(root+'/poses.npy')[:,:3,3]; np.save(root+'/map_crop.npy', crop_box(m, p.min(0)-[20,20,5], p.max(0)+[20,20,25]))"
-.\.venv\Scripts\canopy-analyze.exe results/real/wsf19-rehearsal/map_crop.npy --out results/real/wsf19-rehearsal/analysis
-```
-
-The published TreeScope figures and numbers are from an earlier run.
-Use that run's [documented settings and results](../docs/real-data.md) when
-comparing a fresh run.
-
-## C. Live walkthrough
-
-1. Open the rehearsed survey map. The solid line shows the simulator's route,
-   the dashed line shows the LiDAR estimate, and the blue crosses mark
-   detected tree centres.
-2. If there is time, rerun the first command in section A. Open `trees.csv`
-   or `summary.json` and point out the six matched trees and the four quick
-   navigation trials.
-3. Show the saved TreeScope figures when discussing the real recording.
-   Use the [outcomes document](../docs/OUTCOMES.md) for the full simulated
-   benchmark and the [real-data notes](../docs/real-data.md) for TreeScope.
-
-Keep the PNGs ready for the live walkthrough. The optional `--view 3d` window
-uses OpenGL. If it fails to launch or exits with an error, the command creates
-PNG figures. Rehearse the window on the exact laptop before using it live.
-
-## D. Standalone odometry
-
-With the environment activated, run:
+Follow the [TreeScope guide](../docs/running-on-real-data.md) to generate a local WSF-19 analysis. To regenerate the side and top views from that analysis, use the Python interpreter from your environment:
 
 ```bash
-canopy-odometry --synthetic 0 --out results/odom-synthetic
-canopy-odometry --synthetic 0 --odometry all-returns --out results/odom-synthetic-baseline
+python presentation/make_slide_images.py --analysis results/runs/wsf19/analysis --out results/runs/wsf19/figures
 ```
 
-The default synthetic command uses the same forest and ground-filtered
-alignment as the full demo. Compare `odometry_drift_percent` in the two
-`summary.json` files. The TreeScope and NPY input commands use all valid
-returns for alignment.
+The interactive demo can open the fresh height-normalised cloud when available. It points you to the saved TreeScope side view if the data is absent.
+
+## Standalone odometry
+
+With the environment activated:
+
+```bash
+canopy-odometry --synthetic 0 --out results/runs/odom-synthetic
+canopy-odometry --synthetic 0 --odometry all-returns --out results/runs/odom-synthetic-baseline
+```
+
+Compare `odometry_drift_percent` in the two `summary.json` files. The default synthetic command uses ground-filtered alignment. Recorded bags and NPY frame inputs use all valid returns.

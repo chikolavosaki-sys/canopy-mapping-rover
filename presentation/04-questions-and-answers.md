@@ -161,9 +161,7 @@ to show during the presentation.
 ## About the work
 
 **Q: What did each of you do?**
-Prithvi: forest analytics (ground, trees, ladder fuel), repository and report.
-Anwita: LiDAR odometry and navigation. Prajwal: simulator and evaluation.
-(Adjust to what each person actually did.)
+Each person should explain their own contributions using a concrete example from the project. Mention the problem, the change or review you handled, and the evidence that shows what improved.
 
 **Q: What open-source tools did you use, and what did you write yourselves?**
 Used: Open3D, KISS-ICP, CSF, rosbags, NumPy/SciPy. Wrote: the simulator, the

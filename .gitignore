@@ -2,6 +2,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+/build/
+/dist/
 .venv/
 venv/
 *.las
@@ -22,4 +24,7 @@ results/**
 !results/**/*.md
 !results/**/*.png
 !results/**/*.csv
+
+# Local runs created by the setup and rehearsal commands.
+/results/runs/
 *.egg-info/

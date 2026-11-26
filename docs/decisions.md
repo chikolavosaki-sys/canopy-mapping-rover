@@ -1,5 +1,7 @@
 # Design decisions
 
+This log records decisions as they were made. Later entries supersede earlier experiments where indicated. See the [current architecture](architecture.md) and [published outcomes](OUTCOMES.md) for the final project.
+
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-10-02 | Water module is owned solely by Prajwal; aerial layer kept small to protect scope. | The project has about three months and a three-person team, so ownership and scope need to stay clear. |
@@ -49,3 +51,6 @@
 | 2026-11-25 | Ground-filter synthetic scans before KISS-ICP alignment. This supersedes the earlier all-returns choice for simulated alignment. | Similar ground returns can obscure movement. Keep points more than 0.10 m above the local ground estimate for alignment, with an all-returns fallback if any scan retains fewer than 100 points. KISS-ICP itself is unchanged. Map registration and recorded-data alignment use all valid returns, including near-ground features. |
 | 2026-11-25 | Model separate simulated LiDAR profiles for navigation (26 beams over 50°) and mapping (16 beams over 30°). | Both profiles have about 2° vertical spacing. The wider navigation profile extends downward to 25° and detected a low boulder on a slope that the 15° downward mapping limit missed. Keeping the mapping profile preserves the original scan geometry for comparison. Navigation results apply to the wider simulated profile. |
 | 2026-11-25 | Report navigation on held-out seeds 3000–3019 across four forest densities. | Seeds 2000–2019 were used to diagnose failures and verify fixes. Their replay is a regression check. The held-out run evaluates the fixed configuration on new forests. |
+| 2026-11-25 | Ship the default YAML inside the Python wheel and smoke-test the installed CLI from outside the checkout. | The editable install found the repository config, and the regular install needs its own copy. |
+| 2026-11-25 | Test native Windows with RANSAC and retain CSF coverage on Ubuntu. | Both ground-classifier paths support the synthetic demo. The standard Windows setup can use RANSAC without a C++ build. |
+| 2026-11-25 | Write rehearsal and reproduction outputs under `results/runs/`. | Fresh runs can be compared without replacing the saved demo, real-data, or ML results. |

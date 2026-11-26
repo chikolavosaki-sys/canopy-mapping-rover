@@ -43,11 +43,21 @@ def analyse_points(points: np.ndarray) -> Analysis:
     return Analysis(model, is_ground, normalized, stems, density_grid(normalized), ladder)
 
 
-def analyze_cloud(cloud_path: str | Path, out_dir: str | Path) -> dict:
-    """Analyse a point-cloud file and write the results to ``out_dir``."""
+def load_cloud(cloud_path: str | Path) -> np.ndarray:
+    """Read a nonempty point cloud for forest analytics."""
     points = load_points(cloud_path)
     if len(points) == 0:
         raise ValueError("point cloud is empty")
+    return points
+
+
+def analyze_cloud(cloud_path: str | Path, out_dir: str | Path) -> dict:
+    """Analyse a point-cloud file and write the results to ``out_dir``."""
+    return analyze_and_write(load_cloud(cloud_path), out_dir)
+
+
+def analyze_and_write(points: np.ndarray, out_dir: str | Path) -> dict:
+    """Analyse loaded points and write the results to ``out_dir``."""
     result = analyse_points(points)
     destination = Path(out_dir)
     destination.mkdir(parents=True, exist_ok=True)

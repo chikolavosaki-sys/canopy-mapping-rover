@@ -55,7 +55,7 @@ points of trunks, shrubs and ground: exactly the hidden layer."
 
 **Show:** Three boxes: (1) ladder-fuel risk map, (2) tree count + trunk diameter
 (DBH), (3) simulated obstacle avoidance. Show the saved TreeScope heatmap and
-the current simulator figures from `results/semester-demo/figures/`.
+the current simulator figures from `results/runs/demo/figures/`.
 
 **Say:** "From the scans we produce three things: a risk map of ladder fuel in 1 m
 squares, a list of trees with their trunk thickness for forest inventory, and a
@@ -78,7 +78,7 @@ ladder-fuel score. In parallel, the rover uses each scan to decide how to drive.
 ## 7. Step 1: knowing where we are and building the map
 
 **Show** the current `lidar_scan.png` and `odometry.png` from
-`results/semester-demo/figures/`.
+`results/runs/demo/figures/`.
 
 **Say:** "There is no GPS under a forest canopy, so the rover works out its own
 movement by lining each new scan up with the previous ones; this is called
@@ -118,7 +118,7 @@ the fuel the rover sees and a drone would not."
 
 ## 10. Step 4: driving safely
 
-**Show** the current `results/semester-demo/figures/forest_map.png` and the
+**Show** the current `results/runs/demo/figures/forest_map.png` and the
 four states FORWARD, TURN LEFT, TURN RIGHT, and STOP.
 
 **Say:** "The rover splits the space ahead into 9 directions and checks a corridor
@@ -169,7 +169,7 @@ the same pipeline on a real public forest recording from the TreeScope project."
 | Ladder-fuel score vs simulated shrub locations | AUC about 0.97 |
 | Navigation on held-out seeds 3000–3019 | 79 of 80 reached the goal (98.75%), one collision, zero timeouts |
 
-Use `results/semester-demo/survey_map.png` alongside the table.
+Use `results/runs/demo/survey_map.png` alongside the table.
 
 **Say** "On the demo forest, the LiDAR-estimated route ended about nine
 centimetres from the simulator's endpoint. The map matched all six trees,

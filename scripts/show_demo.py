@@ -1,6 +1,6 @@
 """See the simulator: forest map with a rover drive, one LiDAR scan, and odometry.
 
-    python scripts/show_demo.py            # write PNG figures to results/demo/figures/
+    python scripts/show_demo.py            # write PNG figures to results/runs/demo/figures/
     python scripts/show_demo.py --view 3d  # interactive Open3D window (needs a display)
     python scripts/show_demo.py --nav-seed 2000  # inspect a specific navigation scenario
 
@@ -48,7 +48,7 @@ def main() -> None:
     parser.add_argument("--nav-seed", type=int, default=2006, help="navigation forest seed")
     parser.add_argument("--view", choices=("png", "3d"), default="png")
     parser.add_argument("--viewer-worker", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--out", type=Path, default=Path("results/demo/figures"))
+    parser.add_argument("--out", type=Path, default=Path("results/runs/demo/figures"))
     parser.add_argument(
         "--odometry", choices=("ground-filtered", "all-returns"), default="ground-filtered",
         help="choose which simulated LiDAR returns are used to estimate motion",

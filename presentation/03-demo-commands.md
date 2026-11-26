@@ -38,7 +38,7 @@ The quick demo runs four navigation trials. For the full 80-trial benchmark on s
 3. Use the TreeScope figures to illustrate the offline mapping workflow and the [real-data limitations](../docs/real-data.md).
 4. Use the confusion matrix to discuss the synthetic classifier result and the [real-data recall check](../results/ml/report.md#real-data-check-treescope-vat-0723-labelled-frames).
 
-With Bash you can run `bash presentation/live_demo.sh` for an interactive walkthrough. For a 3D view on its own, add `--view 3d` to the `show_demo.py` command. Keep the PNGs ready if the presentation machine cannot open the window.
+With Bash you can run `bash presentation/live_demo.sh` for an interactive walkthrough. For a 3D view on its own, add `--view 3d` to the `show_demo.py` command. The interactive walkthrough points to the saved figures if a viewer fails and continues to the next step.
 
 ## Optional real-data rehearsal
 

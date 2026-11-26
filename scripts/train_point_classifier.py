@@ -9,7 +9,7 @@
    (VAT-0723 .h5: ground and trunk labels only) and draw the real WSF-19 forest
    coloured by predicted class.
 
-Writes ``results/ml/``: report.md, metrics.json, confusion_matrix.png,
+Writes ``results/runs/ml/``: report.md, metrics.json, confusion_matrix.png,
 feature_importance.png, real_classified_side_view.png, and the model file.
 """
 
@@ -27,7 +27,10 @@ from canopy.ml.features import FEATURE_NAMES, point_features
 
 ROOT = Path(__file__).resolve().parents[1]
 VAT_H5 = ROOT / "data/raw/treescope/VAT-0723/ground_truth/labels/VAT-0723M.h5"
-WSF_CLOUD = ROOT / "results/real/wsf19/analysis/normalised_cloud.npy"
+WSF_CLOUD_PATHS = (
+    ROOT / "results/runs/wsf19/analysis/normalised_cloud.npy",
+    ROOT / "results/real/wsf19/analysis/normalised_cloud.npy",
+)
 COLOURS = {"stem": "#2a78d6", "shrub": "#eb6834", "rock": "#1baf7a",
            "ground": "#c9c8c3", "crown": "#8f8e89"}
 _ML = section("ml")
@@ -36,7 +39,7 @@ _ML = section("ml")
 def main() -> None:
     """Train, test on unseen forests, check on real data, write the report."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--out", type=Path, default=Path("results/ml"))
+    parser.add_argument("--out", type=Path, default=Path("results/runs/ml"))
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     print("Building training set from simulated forests", _ML["train_seeds"])
@@ -51,8 +54,9 @@ def main() -> None:
                               args.out / "confusion_matrix.png")
     _plot_importance(importance, args.out / "feature_importance.png")
     real = real_check(model) if VAT_H5.exists() else None
-    if WSF_CLOUD.exists():
-        _plot_real_side_view(model, args.out / "real_classified_side_view.png")
+    wsf_cloud = next((path for path in WSF_CLOUD_PATHS if path.is_file()), None)
+    if wsf_cloud is not None:
+        _plot_real_side_view(model, wsf_cloud, args.out / "real_classified_side_view.png")
     metrics = {"test": result, "real_vat0723": real, "feature_importance": importance,
                "train_points": len(train_y), "test_points": len(test_y)}
     (args.out / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
@@ -104,14 +108,14 @@ def _plot_importance(importance: dict[str, float], path: Path) -> None:
     plt.close(figure)
 
 
-def _plot_real_side_view(model: object, path: Path) -> None:
+def _plot_real_side_view(model: object, cloud_path: Path, out: Path) -> None:
     """A 4 m strip of the real WSF-19 forest, each point coloured by predicted class."""
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    cloud = np.load(WSF_CLOUD)
+    cloud = np.load(cloud_path)
     centre = float(np.median(cloud[:, 1]))
     nearby = cloud[np.abs(cloud[:, 1] - centre) < 3.0]  # strip + margin for neighbours
     strip = nearby[np.abs(nearby[:, 1] - centre) < 2.0]
@@ -128,7 +132,7 @@ def _plot_real_side_view(model: object, path: Path) -> None:
     axis.set_xlabel("x (m)", color="#52514e")
     axis.set_ylabel("height above ground (m)", color="#52514e")
     axis.legend(loc="upper left", fontsize=8, markerscale=8, frameon=False)
-    figure.savefig(path, dpi=150, bbox_inches="tight")
+    figure.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(figure)
 
 

@@ -339,7 +339,7 @@ def main() -> None:
     """Parse demo arguments and run the synthetic pipeline."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", type=Path, default=Path("results/demo"))
+    parser.add_argument("--out", type=Path, default=Path("results/runs/demo"))
     parser.add_argument(
         "--odometry", choices=("ground-filtered", "all-returns"), default="ground-filtered",
         help="choose which simulated LiDAR returns are used to estimate motion",
